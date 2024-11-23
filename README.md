@@ -1,3 +1,5 @@
+# Advent of Code 2024
+
 Working through the puzzles at https://adventofcode.com/2024.
 
 I've written a few blog posts mentioning Advent of Code, if you'd like a look:
