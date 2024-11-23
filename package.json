@@ -1,0 +1,27 @@
+{
+  "name": "advent-of-code-2024",
+  "version": "1.0.0",
+  "description": "Puzzles from 2024",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/neil-vass/advent-of-code-2024.git"
+  },
+  "author": "Neil Vass",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/neil-vass/advent-of-code-2024/issues"
+  },
+  "homepage": "https://github.com/neil-vass/advent-of-code-2024#readme",
+  "devDependencies": {
+    "@types/node": "^22.8.6",
+    "vitest": "^2.1.4"
+  },
+  "dependencies": {
+    "generator-sequences": "^1.0.7"
+  }
+}
