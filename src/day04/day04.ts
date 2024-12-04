@@ -3,9 +3,9 @@ import {linesFromFile, Sequence} from "generator-sequences";
 export function isTargetWord(wordsearch: string[],
                              row: number,
                              col: number,
-                             targetWord: string,
                              rowIncrement: number,
-                             colIncrement: number)  {
+                             colIncrement: number,
+                             targetWord: string,)  {
 
     const endRow = row + (targetWord.length-1) * rowIncrement;
     if (endRow < 0 || endRow >= wordsearch.length) return false;
@@ -23,25 +23,24 @@ export function isTargetWord(wordsearch: string[],
 }
 
 export function countXmasesFrom(wordsearch: string[], row: number, col: number) {
-    const dirFunction = isTargetWord.bind(undefined, wordsearch, row, col, "XMAS");
-    const directions = [
-        dirFunction(0, +1),
-        dirFunction(0, -1),
-        dirFunction(+1, 0),
-        dirFunction(-1, 0),
-        dirFunction(+1, +1),
-        dirFunction(+1, -1),
-        dirFunction(-1, +1),
-        dirFunction(-1, -1),
-    ]
-    return directions.filter(d => d).length;
+    let matchesFound = 0;
+    const matchInDirection = isTargetWord.bind(undefined, wordsearch, row, col);
+
+    for (let rowIncrement = -1; rowIncrement <= 1; rowIncrement++) {
+        for (let colIncrement = -1; colIncrement <= 1; colIncrement++) {
+            if (matchInDirection(rowIncrement, colIncrement, "XMAS")) {
+                matchesFound++;
+            }
+        }
+    }
+    return matchesFound;
 }
 
 export function isTopLeftOfCross(wordsearch: string[], row: number, col: number) {
-    const matchFromTopLeft = isTargetWord.bind(undefined, wordsearch, row, col);
-    if (matchFromTopLeft("MAS", +1, +1) || matchFromTopLeft("SAM", +1, +1)) {
-        const matchFromTopRight = isTargetWord.bind(undefined, wordsearch, row, col+2);
-        if (matchFromTopRight("MAS", +1, -1) || matchFromTopRight("SAM", +1, -1)) {
+    const matchFromTopLeft = isTargetWord.bind(undefined, wordsearch, row, col, +1, +1);
+    if (matchFromTopLeft("MAS") || matchFromTopLeft("SAM")) {
+        const matchFromTopRight = isTargetWord.bind(undefined, wordsearch, row, col+2, +1, -1);
+        if (matchFromTopRight("MAS") || matchFromTopRight("SAM")) {
             return true;
         }
     }
