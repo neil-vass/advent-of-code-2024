@@ -14,8 +14,7 @@ export function isTargetWord(wordsearch: string[],
     if (endCol < 0 || endCol >= wordsearch[0].length) return false;
 
     for (const letter of targetWord) {
-        if(wordsearch[row][col] !== letter)
-            return false;
+        if (wordsearch[row][col] !== letter) return false;
         row += rowIncrement;
         col += colIncrement;
     }
@@ -38,11 +37,11 @@ export function countXmasesFrom(wordsearch: string[], row: number, col: number) 
 
 export function isTopLeftOfCross(wordsearch: string[], row: number, col: number) {
     const matchFromTopLeft = isTargetWord.bind(undefined, wordsearch, row, col, +1, +1);
+
     if (matchFromTopLeft("MAS") || matchFromTopLeft("SAM")) {
         const matchFromTopRight = isTargetWord.bind(undefined, wordsearch, row, col+2, +1, -1);
-        if (matchFromTopRight("MAS") || matchFromTopRight("SAM")) {
-            return true;
-        }
+
+        if (matchFromTopRight("MAS") || matchFromTopRight("SAM")) return true;
     }
     return false;
 }
