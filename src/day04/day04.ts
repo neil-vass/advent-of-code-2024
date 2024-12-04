@@ -5,7 +5,7 @@ export function isTargetWord(wordsearch: string[],
                              col: number,
                              rowIncrement: number,
                              colIncrement: number,
-                             targetWord: string,)  {
+                             targetWord: string)  {
 
     const endRow = row + (targetWord.length-1) * rowIncrement;
     if (endRow < 0 || endRow >= wordsearch.length) return false;
