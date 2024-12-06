@@ -151,33 +151,10 @@ export class Lab {
     private noteLoopOpportunities() {
         const initialGuard = this.guardHistory[0];
 
-        for (const guard of this.guardHistory) {
-            const {x,y} = guard.pos;
-            let newBlock: Pos | null = null;
+        for (const guard of this.guardHistory.slice(1)) {
+            let newBlock = guard.pos;
 
-            if (guard.dir === "^") {
-                if (guard.pos.y === 0) continue;
-                const blocksInPath = this.blocks.filter(b => b.x > x && b.y === y);
-                if (blocksInPath.length === 0) continue;
-                newBlock = {x, y:y-1};
-            } else if (guard.dir === ">") {
-                if (guard.pos.x === this.xLength-1) continue;
-                const blocksInPath = this.blocks.filter(b => b.x === x && b.y > y);
-                if (blocksInPath.length === 0) continue;
-                newBlock = {x:x+1, y};
-            } else if (guard.dir === "v") {
-                if (guard.pos.y === this.yLength-1) continue;
-                const blocksInPath = this.blocks.filter(b => b.x < x && b.y === y);
-                if (blocksInPath.length === 0) continue;
-                newBlock = {x, y:y+1};
-            } else if (guard.dir === "<") {
-                if (guard.pos.x === 0) continue;
-                const blocksInPath = this.blocks.filter(b => b.x === x && b.y < y);
-                if (blocksInPath.length === 0) continue;
-                newBlock = {x:x-1, y};
-            }
-
-            const otherBlocks = [...this.blocks, newBlock as Pos];
+            const otherBlocks = [...this.blocks, newBlock];
             const otherLab = new Lab(otherBlocks, this.xLength, this.yLength, initialGuard, false);
             if (!otherLab.patrolReachesExit) {
                 this.loopOpportunities.add(JSON.stringify(newBlock));
