@@ -1,22 +1,24 @@
 import {linesFromFile, Sequence} from "generator-sequences";
 
 type Pos = {x: number, y: number};
-const DIRECTIONS = "^>v<";
 type Dir = "^" | ">" | "v" | "<";
 type Guard = { pos: Pos, dir: Dir };
 
 export class Lab {
     // We know we're in a loop if we try to enter a guardHistory that's already in here.
-    private readonly guardHistory = new Array<Guard>();
-    readonly locationsCoveredOnPatrol = new Set<string>();
+    readonly guardHistory = new Array<Guard>();
     readonly loopOpportunities = new Set<string>();
+    patrolReachesExit = false;
 
     private constructor(private blocks: Array<Pos>,
                         private xLength: number,
                         private yLength: number,
-                        private guard: Guard) {
-        this.guardHistory.push(this.guard);
+                        private guard: Guard,
+                        searchForLoopOpportunities = true) {
         this.runPatrol();
+        if (searchForLoopOpportunities) {
+            this.noteLoopOpportunities();
+        }
     }
 
     static async buildFromDescription(lines: Sequence<string>) {
@@ -29,7 +31,7 @@ export class Lab {
             for(let x = 0; x < xLength; x++) {
                 if (line[x] === "#") {
                     blocks.push({x,y});
-                } else if (DIRECTIONS.includes(line[x])) {
+                } else if ("^>v<".includes(line[x])) {
                     initialGuard = { pos: {x,y}, dir: line[x] as Dir };
                 }
             }
@@ -41,7 +43,7 @@ export class Lab {
     }
 
     private runPatrol() {
-        this.locationsCoveredOnPatrol.add(JSON.stringify(this.guard.pos));
+        this.guardHistory.push(this.guard);
         let exited = false;
 
         while(!exited) {
@@ -59,8 +61,8 @@ export class Lab {
 
                 for (let i = x+1; i < blockedBy; i++) {
                     this.guard = { dir: ">", pos: {x:i, y}};
-                    this.locationsCoveredOnPatrol.add(JSON.stringify(this.guard.pos));
-                    this.noteLoopOpportunities();
+                    if (this.isRepeatVisit()) return;
+                    this.guardHistory.push(this.guard);
                 }
                 this.guard = { dir: "v", pos: {x:blockedBy-1, y}};
 
@@ -76,8 +78,8 @@ export class Lab {
 
                 for (let i = y+1; i < blockedBy; i++) {
                     this.guard = { dir: "v", pos: {x, y:i}};
-                    this.locationsCoveredOnPatrol.add(JSON.stringify(this.guard.pos));
-                    this.noteLoopOpportunities();
+                    if (this.isRepeatVisit()) return;
+                    this.guardHistory.push(this.guard);
                 }
                 this.guard = { dir: "<", pos: {x, y:blockedBy-1}};
 
@@ -93,8 +95,8 @@ export class Lab {
 
                 for (let i = x-1; i > blockedBy; i--) {
                     this.guard = { dir: "<", pos: {x:i, y}};
-                    this.locationsCoveredOnPatrol.add(JSON.stringify(this.guard.pos));
-                    this.noteLoopOpportunities();
+                    if (this.isRepeatVisit()) return;
+                    this.guardHistory.push(this.guard);
                 }
                 this.guard = { dir: "^", pos: {x:blockedBy+1, y}};
 
@@ -110,12 +112,21 @@ export class Lab {
 
                 for (let i = y-1; i > blockedBy; i--) {
                     this.guard = { dir: "^", pos: {x, y:i}};
-                    this.locationsCoveredOnPatrol.add(JSON.stringify(this.guard.pos));
-                    this.noteLoopOpportunities();
+                    if (this.isRepeatVisit()) return;
+                    this.guardHistory.push(this.guard);
                 }
                 this.guard = { dir: ">", pos: {x, y:blockedBy+1}};
             }
         }
+
+        this.patrolReachesExit = true;
+    }
+
+    private isRepeatVisit() {
+        return this.guardHistory.filter(g =>
+            g.dir === this.guard.dir &&
+            g.pos.x === this.guard.pos.x &&
+            g.pos.y === this.guard.pos.y).length > 0;
     }
 
     private draw(locations: Set<string>) {
@@ -138,31 +149,38 @@ export class Lab {
     }
 
     private noteLoopOpportunities() {
-        this.guardHistory.push(this.guard);
-        const {x,y} = this.guard.pos;
-        if (this.guard.dir === ">") {
-            if (x+1 === this.xLength) return;
-            if (this.blocks.filter(b => b.x === x+1 && b.y === y).length > 0) return;
-            if(this.guardHistory.filter(g => g.dir === "v" && g.pos.x === x && g.pos.y === y).length > 0) {
-                this.loopOpportunities.add(JSON.stringify({x:x+1, y}));
+        const initialGuard = this.guardHistory[0];
+
+        for (const guard of this.guardHistory) {
+            const {x,y} = guard.pos;
+            let newBlock: Pos | null = null;
+
+            if (guard.dir === "^") {
+                if (guard.pos.y === 0) continue;
+                const blocksInPath = this.blocks.filter(b => b.x > x && b.y === y);
+                if (blocksInPath.length === 0) continue;
+                newBlock = {x, y:y-1};
+            } else if (guard.dir === ">") {
+                if (guard.pos.x === this.xLength-1) continue;
+                const blocksInPath = this.blocks.filter(b => b.x === x && b.y > y);
+                if (blocksInPath.length === 0) continue;
+                newBlock = {x:x+1, y};
+            } else if (guard.dir === "v") {
+                if (guard.pos.y === this.yLength-1) continue;
+                const blocksInPath = this.blocks.filter(b => b.x < x && b.y === y);
+                if (blocksInPath.length === 0) continue;
+                newBlock = {x, y:y+1};
+            } else if (guard.dir === "<") {
+                if (guard.pos.x === 0) continue;
+                const blocksInPath = this.blocks.filter(b => b.x === x && b.y < y);
+                if (blocksInPath.length === 0) continue;
+                newBlock = {x:x-1, y};
             }
-        } else if (this.guard.dir === "v") {
-            if (y+1 === this.yLength) return;
-            if (this.blocks.filter(b => b.x === x && b.y === y+1).length > 0) return;
-            if(this.guardHistory.filter(g => g.dir === "<" && g.pos.x === x && g.pos.y === y).length > 0) {
-                this.loopOpportunities.add(JSON.stringify({x, y:y+1}));
-            }
-        } else if (this.guard.dir === "<") {
-            if (x === 0) return;
-            if (this.blocks.filter(b => b.x === x-1 && b.y === y).length > 0) return;
-            if(this.guardHistory.filter(g => g.dir === "^" && g.pos.x === x && g.pos.y === y).length > 0) {
-                this.loopOpportunities.add(JSON.stringify({x:x-1, y}));
-            }
-        } else if (this.guard.dir === "^") {
-            if (y === 0) return;
-            if (this.blocks.filter(b => b.x === x && b.y === y-1).length > 0) return;
-            if(this.guardHistory.filter(g => g.dir === ">" && g.pos.x === x && g.pos.y === y).length > 0) {
-                this.loopOpportunities.add(JSON.stringify({x, y:y-1}));
+
+            const otherBlocks = [...this.blocks, newBlock as Pos];
+            const otherLab = new Lab(otherBlocks, this.xLength, this.yLength, initialGuard, false);
+            if (!otherLab.patrolReachesExit) {
+                this.loopOpportunities.add(JSON.stringify(newBlock));
             }
         }
     }
@@ -170,18 +188,17 @@ export class Lab {
 
 export async function solvePart1(lines: Sequence<string>) {
     const lab = await Lab.buildFromDescription(lines);
-    return lab.locationsCoveredOnPatrol.size;
+    const locationsCoveredOnPatrol = lab.guardHistory.map(g => JSON.stringify(g.pos));
+    return new Set(locationsCoveredOnPatrol).size;
 }
 
 export async function solvePart2(lines: Sequence<string>) {
     const lab = await Lab.buildFromDescription(lines);
-
-    console.log(lab.loopOpportunities)
     return lab.loopOpportunities.size;
 }
 
 // If this script was invoked directly on the command line:
 if (`file://${process.argv[1]}` === import.meta.url) {
     const filepath = `${import.meta.dirname}/day06.input.txt`;
-    console.log(await solvePart1(linesFromFile(filepath)));
+    console.log(await solvePart2(linesFromFile(filepath)));
 }
