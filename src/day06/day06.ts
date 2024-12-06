@@ -6,10 +6,18 @@ type Dir = "^" | ">" | "v" | "<";
 type Guard = { pos: Pos, dir: Dir };
 
 export class Lab {
+    // We know we're in a loop if we try to enter a guardHistory that's already in here.
+    private readonly guardHistory = new Array<Guard>();
+    readonly locationsCoveredOnPatrol = new Set<string>();
+    readonly loopOpportunities = new Set<string>();
+
     private constructor(private blocks: Array<Pos>,
                         private xLength: number,
                         private yLength: number,
-                        private guard: Guard) {}
+                        private guard: Guard) {
+        this.guardHistory.push(this.guard);
+        this.runPatrol();
+    }
 
     static async buildFromDescription(lines: Sequence<string>) {
         const blocks = new Array<Pos>();
@@ -32,9 +40,8 @@ export class Lab {
         return new Lab(blocks, xLength, y, initialGuard);
     }
 
-    locationsCoveredOnPatrol() {
-        const locations = new Set<string>();
-        locations.add(JSON.stringify(this.guard.pos));
+    private runPatrol() {
+        this.locationsCoveredOnPatrol.add(JSON.stringify(this.guard.pos));
         let exited = false;
 
         while(!exited) {
@@ -51,9 +58,11 @@ export class Lab {
                 }
 
                 for (let i = x+1; i < blockedBy; i++) {
-                    locations.add(JSON.stringify({x:i, y}));
+                    this.guard = { dir: ">", pos: {x:i, y}};
+                    this.locationsCoveredOnPatrol.add(JSON.stringify(this.guard.pos));
+                    this.noteLoopOpportunities();
                 }
-                this.guard = { dir: "v", pos: {x: blockedBy-1, y}};
+                this.guard = { dir: "v", pos: {x:blockedBy-1, y}};
 
             } else if (this.guard.dir === "v") {
                 const blocksInPath = this.blocks.filter(b => b.x === x && b.y > y);
@@ -66,9 +75,12 @@ export class Lab {
                 }
 
                 for (let i = y+1; i < blockedBy; i++) {
-                    locations.add(JSON.stringify({x, y:i}));
+                    this.guard = { dir: "v", pos: {x, y:i}};
+                    this.locationsCoveredOnPatrol.add(JSON.stringify(this.guard.pos));
+                    this.noteLoopOpportunities();
                 }
-                this.guard = { dir: "<", pos: {x, y: blockedBy-1}};
+                this.guard = { dir: "<", pos: {x, y:blockedBy-1}};
+
             } else if (this.guard.dir === "<") {
                 const blocksInPath = this.blocks.filter(b => b.x < x && b.y === y);
                 let blockedBy = 0;
@@ -80,9 +92,12 @@ export class Lab {
                 }
 
                 for (let i = x-1; i > blockedBy; i--) {
-                    locations.add(JSON.stringify({x:i, y}));
+                    this.guard = { dir: "<", pos: {x:i, y}};
+                    this.locationsCoveredOnPatrol.add(JSON.stringify(this.guard.pos));
+                    this.noteLoopOpportunities();
                 }
-                this.guard = { dir: "^", pos: {x: blockedBy+1, y}};
+                this.guard = { dir: "^", pos: {x:blockedBy+1, y}};
+
             } else if (this.guard.dir === "^") {
                 const blocksInPath = this.blocks.filter(b => b.x === x && b.y < y);
                 let blockedBy = 0;
@@ -94,13 +109,13 @@ export class Lab {
                 }
 
                 for (let i = y-1; i > blockedBy; i--) {
-                    locations.add(JSON.stringify({x, y:i}));
+                    this.guard = { dir: "^", pos: {x, y:i}};
+                    this.locationsCoveredOnPatrol.add(JSON.stringify(this.guard.pos));
+                    this.noteLoopOpportunities();
                 }
-                this.guard = { dir: ">", pos: {x, y: blockedBy+1}};
+                this.guard = { dir: ">", pos: {x, y:blockedBy+1}};
             }
         }
-
-        return locations;
     }
 
     private draw(locations: Set<string>) {
@@ -121,16 +136,48 @@ export class Lab {
             console.log(line);
         }
     }
+
+    private noteLoopOpportunities() {
+        this.guardHistory.push(this.guard);
+        const {x,y} = this.guard.pos;
+        if (this.guard.dir === ">") {
+            if (x+1 === this.xLength) return;
+            if (this.blocks.filter(b => b.x === x+1 && b.y === y).length > 0) return;
+            if(this.guardHistory.filter(g => g.dir === "v" && g.pos.x === x && g.pos.y === y).length > 0) {
+                this.loopOpportunities.add(JSON.stringify({x:x+1, y}));
+            }
+        } else if (this.guard.dir === "v") {
+            if (y+1 === this.yLength) return;
+            if (this.blocks.filter(b => b.x === x && b.y === y+1).length > 0) return;
+            if(this.guardHistory.filter(g => g.dir === "<" && g.pos.x === x && g.pos.y === y).length > 0) {
+                this.loopOpportunities.add(JSON.stringify({x, y:y+1}));
+            }
+        } else if (this.guard.dir === "<") {
+            if (x === 0) return;
+            if (this.blocks.filter(b => b.x === x-1 && b.y === y).length > 0) return;
+            if(this.guardHistory.filter(g => g.dir === "^" && g.pos.x === x && g.pos.y === y).length > 0) {
+                this.loopOpportunities.add(JSON.stringify({x:x-1, y}));
+            }
+        } else if (this.guard.dir === "^") {
+            if (y === 0) return;
+            if (this.blocks.filter(b => b.x === x && b.y === y-1).length > 0) return;
+            if(this.guardHistory.filter(g => g.dir === ">" && g.pos.x === x && g.pos.y === y).length > 0) {
+                this.loopOpportunities.add(JSON.stringify({x, y:y-1}));
+            }
+        }
+    }
 }
 
 export async function solvePart1(lines: Sequence<string>) {
     const lab = await Lab.buildFromDescription(lines);
-    return lab.locationsCoveredOnPatrol().size;
+    return lab.locationsCoveredOnPatrol.size;
 }
 
 export async function solvePart2(lines: Sequence<string>) {
     const lab = await Lab.buildFromDescription(lines);
-    return lab.locationsCoveredOnPatrol().size;
+
+    console.log(lab.loopOpportunities)
+    return lab.loopOpportunities.size;
 }
 
 // If this script was invoked directly on the command line:
