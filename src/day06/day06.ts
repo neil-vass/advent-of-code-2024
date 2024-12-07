@@ -21,7 +21,7 @@ export class Lab {
         }
     }
 
-    static async buildFromDescription(lines: Sequence<string>) {
+    static async buildFromDescription(lines: Sequence<string>, searchForLoopOpportunities = true) {
         const blocks = new Array<Pos>();
         let initialGuard: Guard | null = null;
         let xLength = 0;
@@ -39,7 +39,7 @@ export class Lab {
         }
 
         if (!initialGuard) throw new Error(`No guard found`);
-        return new Lab(blocks, xLength, y, initialGuard);
+        return new Lab(blocks, xLength, y, initialGuard, searchForLoopOpportunities);
     }
 
     private runPatrol() {
@@ -131,7 +131,7 @@ export class Lab {
 
     private draw(locations: Set<string>) {
         const blockstrings = this.blocks.map(b => JSON.stringify(b));
-        for (let y = 0; y < this.yLength; y++) {
+q        for (let y = 0; y < this.yLength; y++) {
             let line = "";
             for (let x = 0; x < this.xLength; x++) {
                 const pos = JSON.stringify({x, y});
@@ -150,9 +150,9 @@ export class Lab {
 
     private noteLoopOpportunities() {
         const initialGuard = this.guardHistory[0];
-
-        for (const guard of this.guardHistory.slice(1)) {
-            let newBlock = guard.pos;
+        const locationsCoveredOnPatrol = new Set(this.guardHistory.slice(1).map(g => JSON.stringify(g.pos)));
+        for (const location of locationsCoveredOnPatrol) {
+            let newBlock = JSON.parse(location);
 
             const otherBlocks = [...this.blocks, newBlock];
             const otherLab = new Lab(otherBlocks, this.xLength, this.yLength, initialGuard, false);
@@ -164,7 +164,7 @@ export class Lab {
 }
 
 export async function solvePart1(lines: Sequence<string>) {
-    const lab = await Lab.buildFromDescription(lines);
+    const lab = await Lab.buildFromDescription(lines, false);
     const locationsCoveredOnPatrol = lab.guardHistory.map(g => JSON.stringify(g.pos));
     return new Set(locationsCoveredOnPatrol).size;
 }
