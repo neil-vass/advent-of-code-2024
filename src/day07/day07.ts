@@ -7,6 +7,7 @@ export function parseLine(line: string): [number, number[]] {
     return [Number(testVal), equationVals.map(Number)];
 }
 
+type Operator = (x: number, y: number) => number;
 export const add = (x: number, y: number) => x+y;
 export const mul = (x: number, y: number) => x*y;
 export const con = (x: number, y: number) => +(""+x+y);
@@ -24,18 +25,7 @@ export function couldBeTrue(testVal: number, equationVals: number[], operators=[
     return hasSolution(equationVals[0], equationVals.slice(1));
 }
 
-export async function solvePart1(lines: Sequence<string>) {
-    let calibrationResult = 0;
-    for await (const [testVal, equationVals] of lines.map(parseLine)) {
-        if (couldBeTrue(testVal, equationVals)) {
-            calibrationResult += testVal;
-        }
-    }
-    return calibrationResult;
-}
-
-export async function solvePart2(lines: Sequence<string>) {
-    const operators = [add, mul, con];
+async function sumValidResults(lines: Sequence<string>, operators: Operator[]) {
     let calibrationResult = 0;
     for await (const [testVal, equationVals] of lines.map(parseLine)) {
         if (couldBeTrue(testVal, equationVals, operators)) {
@@ -43,6 +33,14 @@ export async function solvePart2(lines: Sequence<string>) {
         }
     }
     return calibrationResult;
+}
+
+export async function solvePart1(lines: Sequence<string>) {
+    return await sumValidResults(lines, [add, mul]);
+}
+
+export async function solvePart2(lines: Sequence<string>) {
+    return await sumValidResults(lines, [add, mul, con]);
 }
 
 
