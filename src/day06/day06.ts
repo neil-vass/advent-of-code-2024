@@ -131,7 +131,7 @@ export class Lab {
 
     private draw(locations: Set<string>) {
         const blockstrings = this.blocks.map(b => JSON.stringify(b));
-q        for (let y = 0; y < this.yLength; y++) {
+        for (let y = 0; y < this.yLength; y++) {
             let line = "";
             for (let x = 0; x < this.xLength; x++) {
                 const pos = JSON.stringify({x, y});
