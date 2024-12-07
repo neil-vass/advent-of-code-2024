@@ -6,7 +6,7 @@ type Guard = { pos: Pos, dir: Dir };
 
 export class Lab {
     // We know we're in a loop if we try to enter a guardHistory that's already in here.
-    readonly guardHistory = new Array<Guard>();
+    readonly guardHistory = new Set<string>();
     readonly loopOpportunities = new Set<string>();
     patrolReachesExit = false;
 
@@ -43,7 +43,7 @@ export class Lab {
     }
 
     private runPatrol() {
-        this.guardHistory.push(this.guard);
+        this.guardHistory.add(JSON.stringify(this.guard));
         let exited = false;
 
         while(!exited) {
@@ -62,7 +62,7 @@ export class Lab {
                 for (let i = x+1; i < blockedBy; i++) {
                     this.guard = { dir: ">", pos: {x:i, y}};
                     if (this.isRepeatVisit()) return;
-                    this.guardHistory.push(this.guard);
+                    this.guardHistory.add(JSON.stringify(this.guard));
                 }
                 this.guard = { dir: "v", pos: {x:blockedBy-1, y}};
 
@@ -79,7 +79,7 @@ export class Lab {
                 for (let i = y+1; i < blockedBy; i++) {
                     this.guard = { dir: "v", pos: {x, y:i}};
                     if (this.isRepeatVisit()) return;
-                    this.guardHistory.push(this.guard);
+                    this.guardHistory.add(JSON.stringify(this.guard));
                 }
                 this.guard = { dir: "<", pos: {x, y:blockedBy-1}};
 
@@ -96,7 +96,7 @@ export class Lab {
                 for (let i = x-1; i > blockedBy; i--) {
                     this.guard = { dir: "<", pos: {x:i, y}};
                     if (this.isRepeatVisit()) return;
-                    this.guardHistory.push(this.guard);
+                    this.guardHistory.add(JSON.stringify(this.guard));
                 }
                 this.guard = { dir: "^", pos: {x:blockedBy+1, y}};
 
@@ -113,7 +113,7 @@ export class Lab {
                 for (let i = y-1; i > blockedBy; i--) {
                     this.guard = { dir: "^", pos: {x, y:i}};
                     if (this.isRepeatVisit()) return;
-                    this.guardHistory.push(this.guard);
+                    this.guardHistory.add(JSON.stringify(this.guard));
                 }
                 this.guard = { dir: ">", pos: {x, y:blockedBy+1}};
             }
@@ -123,10 +123,7 @@ export class Lab {
     }
 
     private isRepeatVisit() {
-        return this.guardHistory.filter(g =>
-            g.dir === this.guard.dir &&
-            g.pos.x === this.guard.pos.x &&
-            g.pos.y === this.guard.pos.y).length > 0;
+        return this.guardHistory.has(JSON.stringify(this.guard));
     }
 
     private draw(locations: Set<string>) {
@@ -149,13 +146,13 @@ export class Lab {
     }
 
     private noteLoopOpportunities() {
-        const initialGuard = this.guardHistory[0];
-        const locationsCoveredOnPatrol = new Set(this.guardHistory.slice(1).map(g => JSON.stringify(g.pos)));
+        // Note: this has "location and direction", we could get just locations instead.
+        const [initialGuard, ...locationsCoveredOnPatrol] = this.guardHistory;
         for (const location of locationsCoveredOnPatrol) {
-            let newBlock = JSON.parse(location);
+            let newBlock = (JSON.parse(location) as Guard).pos;
 
             const otherBlocks = [...this.blocks, newBlock];
-            const otherLab = new Lab(otherBlocks, this.xLength, this.yLength, initialGuard, false);
+            const otherLab = new Lab(otherBlocks, this.xLength, this.yLength, JSON.parse(initialGuard), false);
             if (!otherLab.patrolReachesExit) {
                 this.loopOpportunities.add(JSON.stringify(newBlock));
             }
@@ -165,7 +162,8 @@ export class Lab {
 
 export async function solvePart1(lines: Sequence<string>) {
     const lab = await Lab.buildFromDescription(lines, false);
-    const locationsCoveredOnPatrol = lab.guardHistory.map(g => JSON.stringify(g.pos));
+    const posAndDirs = [...lab.guardHistory].map(g => JSON.parse(g) as Guard);
+    const locationsCoveredOnPatrol = new Set(posAndDirs.map(g => JSON.stringify(g.pos)));
     return new Set(locationsCoveredOnPatrol).size;
 }
 
