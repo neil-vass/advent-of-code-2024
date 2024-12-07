@@ -12,7 +12,7 @@ export const add = (x: number, y: number) => x+y;
 export const mul = (x: number, y: number) => x*y;
 export const con = (x: number, y: number) => +(""+x+y);
 
-export function couldBeTrue(testVal: number, equationVals: number[], operators=[add, mul]) {
+export function couldBeTrue(testVal: number, equationVals: number[], operators: Operator[]) {
 
     function hasSolution(head: number, rest: number[]): boolean {
         if (rest.length === 0) {

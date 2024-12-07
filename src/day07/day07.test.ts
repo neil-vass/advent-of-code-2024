@@ -8,9 +8,9 @@ describe("Part 1", () => {
     });
 
     it("Checks single equations", () => {
-        expect(couldBeTrue(190, [10,19])).toBe(true);
-        expect(couldBeTrue(3267, [81, 40, 27])).toBe(true);
-        expect(couldBeTrue(83, [17, 5])).toBe(false);
+        expect(couldBeTrue(190, [10,19], [add, mul])).toBe(true);
+        expect(couldBeTrue(3267, [81, 40, 27], [add, mul])).toBe(true);
+        expect(couldBeTrue(83, [17, 5], [add, mul])).toBe(false);
     });
 
     it("Solves example", async () => {
