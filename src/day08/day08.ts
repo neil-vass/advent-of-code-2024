@@ -37,7 +37,7 @@ export class AntennaAnalyser {
 
     findAntinodeLocations(usingHarmonics=false) {
         const antinodes = new Array<Pos>();
-        for (const [antenna, locations] of this.antennaMap.entries()) {
+        for (const locations of this.antennaMap.values()) {
             for (const [a, b] of pairsWithSignificantOrder(locations)) {
 
                 if (!usingHarmonics) {
