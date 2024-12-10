@@ -34,19 +34,28 @@ export class TrailMap {
     countTrails() {
         let pathCount = 0;
         for (const p of this.trailheads()) {
-            pathCount += this.countTrailsFrom(p);
+            const distinctGoalsReached = new Set(this.followTrailsFrom(p));
+            pathCount += distinctGoalsReached.size;
         }
         return pathCount;
     }
 
-    private countTrailsFrom(start: Pos) {
+    countTrailsV2() {
+        let pathCount = 0;
+        for (const p of this.trailheads()) {
+            pathCount += this.followTrailsFrom(p).length;
+        }
+        return pathCount;
+    }
+
+    private followTrailsFrom(start: Pos) {
         // Objects will be saved for comparisons.
         type SavedNode = string;
         const save = (n: Pos): SavedNode => JSON.stringify(n);
         const load = (s: SavedNode): Pos => JSON.parse(s);
 
         const frontier = new FifoQueue<SavedNode>();
-        const reachableGoals = new Set<SavedNode>();
+        const reachedGoals = new Array<SavedNode>();
 
         const savedStart = save(start);
         frontier.push(savedStart);
@@ -55,13 +64,13 @@ export class TrailMap {
             const current = frontier.pull()!;
             for (const n of this.neighbours(load(current))) {
                 if (this.height(n) === 9) {
-                    reachableGoals.add(save(n));
+                    reachedGoals.push(save(n));
                 } else {
                     frontier.push(save(n));
                 }
             }
         }
-        return reachableGoals.size;
+        return reachedGoals;
     }
 
     private *neighbours(p: Pos) {
@@ -84,13 +93,19 @@ export class TrailMap {
             p.y >= 0 && p.y < this.grid.length);
     }
 }
+
 export async function solvePart1(lines: Sequence<string>) {
     const trailMap = await TrailMap.buildFromDescription(lines);
     return trailMap.countTrails();
 }
 
+export async function solvePart2(lines: Sequence<string>) {
+    const trailMap = await TrailMap.buildFromDescription(lines);
+    return trailMap.countTrailsV2();
+}
+
 // If this script was invoked directly on the command line:
 if (`file://${process.argv[1]}` === import.meta.url) {
     const filepath = `${import.meta.dirname}/day10.input.txt`;
-    console.log(await solvePart1(linesFromFile(filepath)));
+    console.log(await solvePart2(linesFromFile(filepath)));
 }
