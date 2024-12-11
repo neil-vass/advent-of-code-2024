@@ -1,5 +1,5 @@
 import {expect, describe, it} from "vitest";
-import {singleStoneBlink, solvePart1, stonesAfter} from "./day11.js";
+import {singleStoneBlink, solvePart1, stoneCountFromStoneCollection} from "./day11.js";
 
 describe("Part 1", () => {
     it("Uses single stone rules", async () => {
@@ -12,7 +12,7 @@ describe("Part 1", () => {
     });
 
     it("Runs multiple blinks", async () => {
-        expect(stonesAfter([125, 17], 6)).toBe(22);
+        expect(stoneCountFromStoneCollection([125, 17], 6)).toBe(22);
     });
 
     it("Solves example", async () => {

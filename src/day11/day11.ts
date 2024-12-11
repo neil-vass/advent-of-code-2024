@@ -1,6 +1,7 @@
 import {singleLineFromFile} from "generator-sequences";
 
-export function singleStoneBlink(stone: number) {
+// After one blink, what collection of stones does this single stone turn into?
+export function singleStoneBlink(stone: number): number[] {
     if (stone === 0) return [1];
 
     const digits = Math.floor(Math.log10(stone)) +1;
@@ -14,26 +15,31 @@ export function singleStoneBlink(stone: number) {
 
 const cache = new Map<string, number>();
 
-export function oneStoneTurnsInto(stone: number, blinks: number): number {
-    let retval = cache.get(JSON.stringify([stone, blinks]));
-    if (retval === undefined) {
+// After multiple blinks, how many stones do we end up with from this single stone?
+export function stoneCountFromSingleStone(stone: number, blinks: number): number {
+    let result = cache.get(JSON.stringify([stone, blinks]));
+    if (result === undefined) {
+
+        const stonesAfterThisBlink = singleStoneBlink(stone);
         if (blinks === 1) {
-            retval = singleStoneBlink(stone).length;
+            result = stonesAfterThisBlink.length;
         } else {
-            retval =  stonesAfter(singleStoneBlink(stone), blinks - 1);
+            result = stoneCountFromStoneCollection(stonesAfterThisBlink, blinks-1);
         }
-        cache.set(JSON.stringify([stone, blinks]), retval);
+
+        cache.set(JSON.stringify([stone, blinks]), result);
     }
-    return retval;
+    return result;
 }
 
-export function stonesAfter(stones: number[], blinks: number) {
-    return stones.reduce((acc, val) => acc + oneStoneTurnsInto(val, blinks), 0);
+// After multiple blinks, how many stones do we end up with from this collection?
+export function stoneCountFromStoneCollection(stones: number[], blinks: number): number {
+    return stones.reduce((acc, val) => acc + stoneCountFromSingleStone(val, blinks), 0);
 }
 
 export function solvePart1(line: string, blinks: number) {
     const stones = line.split(" ").map(Number);
-    return stonesAfter(stones, blinks);
+    return stoneCountFromStoneCollection(stones, blinks);
 }
 
 // If this script was invoked directly on the command line:
