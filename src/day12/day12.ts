@@ -15,38 +15,43 @@ export class Garden {
             col < this.plots[0].length;
     }
 
-    fenceForPlot(row: number, col: number) {
+    exploreRegion(row: number, col: number, reached: Set<string>) {
+        reached.add(JSON.stringify([row, col]));
+
         const neighbours = [
             [row-1, col], [row+1, col], [row, col-1], [row, col+1]
         ]
         let fences = 4;
+        let area = 1;
         for (const [nRow, nCol] of neighbours) {
              if (this.isInBounds(nRow, nCol) &&
-                this.plots[nRow][nCol] === this.plots[row][col]) {
+                 this.plots[nRow][nCol] === this.plots[row][col]) {
+                    // Take down this fence and go exploring.
                     fences--;
+                    if (!reached.has(JSON.stringify([nRow, nCol]))) {
+                        const details = this.exploreRegion(nRow, nCol, reached);
+                        area += details.area;
+                        fences += details.perimeter;
+                    }
             }
         }
-        return fences;
+        return { area: area, perimeter: fences };
     }
 
     totalFenceCost() {
         type Region = { area: number, perimeter: number }
-        const cropDetails = new Map<string, Region>();
+        const regions = new Array<Region>();
+        const reached = new Set<string>();
 
         for (let row = 0; row < this.plots.length; row++) {
             for (let col = 0; col < this.plots[0].length; col++) {
-                const crop = this.plots[row][col];
-                let details = cropDetails.get(crop);
-                if (details === undefined) {
-                    details = { area: 0, perimeter: 0};
-                    cropDetails.set(crop, details);
-                }
-                details.area++;
-                details.perimeter += this.fenceForPlot(row, col);
+
+                if (reached.has(JSON.stringify([row, col]))) continue;
+                regions.push(this.exploreRegion(row, col, reached));
             }
         }
 
-        return [...cropDetails.values()].reduce((acc, val) => acc + val.area * val.perimeter, 0);
+        return regions.reduce((acc, val) => acc + val.area * val.perimeter, 0);
     }
 }
 
