@@ -27,12 +27,12 @@ export class Garden {
         ]
         let fences = 4;
         let area = 1;
-        for (const [nRow, nCol] of neighbours) {
-             if (this.isInBounds(nRow, nCol) &&
-                 this.plots[nRow][nCol] === this.plots[row][col]) {
+        for (const [neighbouringRow, neighbouringCol] of neighbours) {
+             if (this.isInBounds(neighbouringRow, neighbouringCol) &&
+                 this.plots[neighbouringRow][neighbouringCol] === this.plots[row][col]) {
                     // Take down this fence and go exploring.
                     fences--;
-                    const details = this.exploreRegion(nRow, nCol, reached);
+                    const details = this.exploreRegion(neighbouringRow, neighbouringCol, reached);
                     area += details.area;
                     fences += details.perimeter;
             }
