@@ -1,6 +1,6 @@
 import {linesFromFile, Sequence} from "generator-sequences";
 
-type Region = { area: number, perimeter: number }
+type Region = { area: number, perimeter: number };
 
 export class Garden {
     private constructor(readonly plots: string[]) {}
@@ -16,28 +16,37 @@ export class Garden {
             col < this.plots[0].length;
     }
 
-    exploreRegion(row: number, col: number, reached: Set<string>): Region {
+    exploreRegion(row: number, col: number, reached: Set<string>, fencesOnNeighbour=new Set<string>()): Region {
         if (reached.has(JSON.stringify([row, col]))) {
             return {area: 0, perimeter: 0};
         }
         reached.add(JSON.stringify([row, col]));
 
         const neighbours = [
-            [row-1, col], [row+1, col], [row, col-1], [row, col+1]
-        ]
-        let fences = 4;
-        let area = 1;
-        for (const [neighbouringRow, neighbouringCol] of neighbours) {
-             if (this.isInBounds(neighbouringRow, neighbouringCol) &&
-                 this.plots[neighbouringRow][neighbouringCol] === this.plots[row][col]) {
-                    // Take down this fence and go exploring.
-                    fences--;
-                    const details = this.exploreRegion(neighbouringRow, neighbouringCol, reached);
-                    area += details.area;
-                    fences += details.perimeter;
+            {dir: "^", nRow: row-1, nCol: col },
+            {dir: "v", nRow: row+1, nCol: col },
+            {dir: "<", nRow: row, nCol: col-1 },
+            {dir: ">", nRow: row, nCol: col+1 },
+        ];
+        const toExplore = new Array<{nRow: number, nCol: number}>();
+        let fences = new Set<string>();
+        for (const {dir, nRow, nCol} of neighbours) {
+             if (this.isInBounds(nRow, nCol) && this.plots[nRow][nCol] === this.plots[row][col]) {
+                 toExplore.push({nRow, nCol});
+            } else {
+                 fences.add(dir);
             }
         }
-        return { area: area, perimeter: fences };
+
+        let area = 1;
+        let perimeter = fences.size;
+        for (const n of toExplore) {
+            const details = this.exploreRegion(n.nRow, n.nCol, reached, fences);
+            area += details.area;
+            perimeter += details.perimeter;
+        }
+
+        return {area, perimeter};
     }
 
     totalFenceCost() {
