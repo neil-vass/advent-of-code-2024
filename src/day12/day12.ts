@@ -1,5 +1,6 @@
 import {linesFromFile, Sequence} from "generator-sequences";
 
+type Region = { area: number, perimeter: number }
 
 export class Garden {
     private constructor(readonly plots: string[]) {}
@@ -15,7 +16,10 @@ export class Garden {
             col < this.plots[0].length;
     }
 
-    exploreRegion(row: number, col: number, reached: Set<string>) {
+    exploreRegion(row: number, col: number, reached: Set<string>): Region {
+        if (reached.has(JSON.stringify([row, col]))) {
+            return {area: 0, perimeter: 0};
+        }
         reached.add(JSON.stringify([row, col]));
 
         const neighbours = [
@@ -28,34 +32,36 @@ export class Garden {
                  this.plots[nRow][nCol] === this.plots[row][col]) {
                     // Take down this fence and go exploring.
                     fences--;
-                    if (!reached.has(JSON.stringify([nRow, nCol]))) {
-                        const details = this.exploreRegion(nRow, nCol, reached);
-                        area += details.area;
-                        fences += details.perimeter;
-                    }
+                    const details = this.exploreRegion(nRow, nCol, reached);
+                    area += details.area;
+                    fences += details.perimeter;
             }
         }
         return { area: area, perimeter: fences };
     }
 
     totalFenceCost() {
-        type Region = { area: number, perimeter: number }
         const regions = new Array<Region>();
         const reached = new Set<string>();
+        let fenceCost = 0;
 
         for (let row = 0; row < this.plots.length; row++) {
             for (let col = 0; col < this.plots[0].length; col++) {
-
-                if (reached.has(JSON.stringify([row, col]))) continue;
-                regions.push(this.exploreRegion(row, col, reached));
+                const {area, perimeter} = this.exploreRegion(row, col, reached);
+                fenceCost += area * perimeter;
             }
         }
 
-        return regions.reduce((acc, val) => acc + val.area * val.perimeter, 0);
+        return fenceCost;
     }
 }
 
 export async function solvePart1(lines: Sequence<string>) {
+    const garden = await Garden.buildFromDescription(lines);
+    return garden.totalFenceCost();
+}
+
+export async function solvePart2(lines: Sequence<string>) {
     const garden = await Garden.buildFromDescription(lines);
     return garden.totalFenceCost();
 }

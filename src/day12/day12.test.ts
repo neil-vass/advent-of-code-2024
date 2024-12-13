@@ -1,8 +1,8 @@
 import {expect, describe, it} from "vitest";
-import {solvePart1} from "./day12.js";
+import {solvePart1, solvePart2} from "./day12.js";
 import {Sequence} from "generator-sequences";
 
-describe("Part 2", () => {
+describe("Part 1", () => {
     it("Solves tiny example", async () => {
         const lines = new Sequence([
             "AA"
@@ -31,4 +31,14 @@ describe("Part 2", () => {
         expect(await solvePart1(lines)).toBe(772);
     });
 
+});
+
+
+describe("Part 2", () => {
+    it("Solves tiny example", async () => {
+        const lines = new Sequence([
+            "AA"
+        ]);
+        expect(await solvePart2(lines)).toBe(8);
+    });
 });
