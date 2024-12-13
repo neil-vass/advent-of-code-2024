@@ -41,7 +41,6 @@ export class Garden {
     }
 
     totalFenceCost() {
-        const regions = new Array<Region>();
         const reached = new Set<string>();
         let fenceCost = 0;
 
