@@ -1,26 +1,6 @@
-import {expect, describe, it} from "vitest";
-import {parseRobot, Robot, solvePart1, XY} from "./day14.js";
+import {describe, expect, it} from "vitest";
+import {parseRobot, positionAfter, quadrant, solvePart1} from "./day14.js";
 import {Sequence} from "generator-sequences";
-
-const mod = (a: number, b: number) => ((a % b) + b) % b;
-
-function positionAfter(robot: Robot, room: XY, seconds: number) {
-    const xMove = robot.p.x + (robot.v.x * seconds)
-    const xWrapped =  mod(xMove, room.x);
-    const yMove = robot.p.y + (robot.v.y * seconds)
-    const yWrapped =  mod(yMove, room.y);
-    return { x: xWrapped, y: yWrapped };
-}
-
-function quadrant(pos: XY, room: XY): number | null {
-    const xMid = Math.floor(room.x / 2);
-    const yMid = Math.floor(room.y / 2);
-    if (pos.x < xMid && pos.y < yMid) return 1;
-    if (pos.x > xMid && pos.y < yMid) return 2;
-    if (pos.x < xMid && pos.y > yMid) return 3;
-    if (pos.x > xMid && pos.y > yMid) return 4;
-    return null;
-}
 
 describe("Part 1", () => {
     it("Parses robot", async () => {
@@ -59,6 +39,8 @@ describe("Part 1", () => {
             "p=2,4 v=2,-3",
             "p=9,5 v=-3,-3",
         ]);
-        expect(await solvePart1(lines)).toBe(12);
+        const room = {x: 11, y: 7};
+        const seconds = 100;
+        expect(await solvePart1(lines, room, seconds)).toBe(12);
     });
 });
