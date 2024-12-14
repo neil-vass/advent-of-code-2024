@@ -90,4 +90,16 @@ describe("Part 2", () => {
         ]);
         expect(await solvePart2(lines)).toBe(1206);
     });
+
+    it("Solves edge case", async () => {
+        // Early version was failing on this.
+        const lines = new Sequence([
+            "AAAA",
+            "...A",
+            ".A.A",
+            ".AAA",
+            ".A__",
+        ]);
+        expect(await solvePart2(lines)).toBe(196);
+    });
 });

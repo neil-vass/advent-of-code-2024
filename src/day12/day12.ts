@@ -42,7 +42,6 @@ export class Garden {
             }
         }
 
-
         let area = 1;
         let perimeter = fences.size;
         let sides = 0;
@@ -52,6 +51,7 @@ export class Garden {
             area += details.area;
             perimeter += details.perimeter;
             sides += details.sides;
+            fencesOnNeighbours[row][col] = fencesOnNeighbours[row][col].union(fences.intersection(fencesOnNeighbours[n.nRow][n.nCol]));
             sidesNotCountedByNeighbours = sidesNotCountedByNeighbours.difference(fencesOnNeighbours[n.nRow][n.nCol]);
         }
         sides += sidesNotCountedByNeighbours.size;
