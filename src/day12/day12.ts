@@ -50,20 +50,62 @@ export class Garden {
         return {area, perimeter};
     }
 
-    totalFenceCost(costCalculator: (r: Region) => number) {
+    totalFenceCost(costCalculator: (r: Region, numCorners: number) => number) {
         const reached = new Set<string>();
-        const fences = Array.from(this.plots, r => Array.from(this.plots[0], c => new Set<string>()));
         let fenceCost = 0;
 
         for (let row = 0; row < this.plots.length; row++) {
             for (let col = 0; col < this.plots[0].length; col++) {
+                const fences = Array.from(this.plots, r => Array.from(this.plots[0], c => new Set<string>()));
                 const region = this.exploreRegion(row, col, reached, fences);
-                if (region.area !== 0) console.log(this.plots[row][col], region)
-                fenceCost += costCalculator(region);
+                if (region.area !== 0) {
+                    const numCorners = this.countCorners(fences);
+                    fenceCost += costCalculator(region, numCorners);
+                }
             }
         }
-        console.log(fences)
         return fenceCost;
+    }
+
+    countCorners(fences: Set<string>[][]) {
+        let count = 0;
+
+        const interiorCorners = [
+            new Set(["<", "^"]),
+            new Set(["<", "v"]),
+            new Set([">", "^"]),
+            new Set([">", "v"])
+        ];
+
+        const exteriorCorners = [
+            {currWith: "<", currWithout: "v",rowOffset: 1, colOffset: -1, otherWith: "^"},
+            {currWith: ">", currWithout: "v", rowOffset: 1, colOffset: 1, otherWith: "^"},
+            {currWith: "v", currWithout: "<", rowOffset: 1, colOffset: -1, otherWith: ">"},
+            {currWith: "v", currWithout: ">", rowOffset: 1, colOffset: 1, otherWith: "<"},
+        ];
+
+        for (let row = 0; row < fences.length; row++) {
+            for (let col = 0; col < fences[0].length; col++) {
+                const currPlot = fences[row][col];
+                if (currPlot.size === 0) continue;
+
+                for (const ic of interiorCorners) {
+                    if (currPlot.isSupersetOf(ic)) count++;
+                }
+
+                for (const ec of exteriorCorners) {
+                    if (currPlot.has(ec.currWith) && !currPlot.has(ec.currWithout)) {
+                        const otherRow = row + ec.rowOffset;
+                        const otherCol = col + ec.colOffset;
+                        if (this.isInBounds(otherRow, otherCol) &&
+                            fences[otherRow][otherCol].has(ec.otherWith)) {
+                            count++;
+                        }
+                    }
+                }
+            }
+        }
+        return count;
     }
 }
 
@@ -76,7 +118,7 @@ export async function solvePart1(lines: Sequence<string>) {
 
 export async function solvePart2(lines: Sequence<string>) {
     const garden = await Garden.buildFromDescription(lines);
-    const costCalculator = (r: Region) => 1;
+    const costCalculator = (r: Region, numCorners: number) => r.area * numCorners;
     return garden.totalFenceCost(costCalculator);
 }
 

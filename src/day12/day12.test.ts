@@ -65,12 +65,12 @@ describe("Part 2", () => {
 
     it("Solves Möbius example", async () => {
         const lines = new Sequence([
-            'AAAAAA',
-            'AAABBA',
-            'AAABBA',
-            'ABBAAA',
-            'ABBAAA',
-            'AAAAAA',
+            "AAAAAA",
+            "AAABBA",
+            "AAABBA",
+            "ABBAAA",
+            "ABBAAA",
+            "AAAAAA",
         ]);
         expect(await solvePart2(lines)).toBe(368);
     });
