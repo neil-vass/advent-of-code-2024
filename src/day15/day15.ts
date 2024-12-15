@@ -5,6 +5,8 @@ const WALL = "#";
 const BOX = "O";
 const ROBOT = "@";
 const CLEAR = ".";
+const BOX_LEFT = "[";
+const BOX_RIGHT = "]";
 
 type Pos = { row: number, col: number };
 
@@ -17,7 +19,7 @@ export class Warehouse {
         this.robotPos = robotStart;
     }
 
-    static async buildFromDescription(lines: Sequence<string>) {
+    static async buildFromDescription(lines: Sequence<string>, wide=false) {
         const grid: string[][] = [];
         let robotStart = {row:0, col: 0};
 
@@ -25,7 +27,9 @@ export class Warehouse {
         let rowNum = 0;
 
         while (linesArray[rowNum] !== "") {
-            const currRow = linesArray[rowNum].split("");
+            let currRow = linesArray[rowNum].split("");
+            if (wide) currRow = currRow.flatMap(Warehouse.widen);
+
             grid.push(currRow);
             let botIdx = currRow.indexOf(ROBOT);
             if (botIdx !== -1) {
@@ -39,6 +43,28 @@ export class Warehouse {
         return new Warehouse(grid, robotMoves, robotStart);
     }
 
+    static async buildWideFromDescription(lines: Sequence<string>) {
+        return Warehouse.buildFromDescription(lines, true);
+    }
+
+    private static widen(content: string) {
+        switch(content) {
+            case WALL: return [WALL, WALL];
+            case BOX: return [BOX_LEFT, BOX_RIGHT];
+            case CLEAR: return [CLEAR, CLEAR];
+            case ROBOT: return [ROBOT, CLEAR];
+            default: throw new Error(`Unknown content: ${content}`);
+        }
+    }
+
+    display() {
+        this.setContentsAt(this.robotPos, ROBOT);
+        for (const row of this.grid) {
+            console.log(row.join(""));
+        }
+        this.setContentsAt(this.robotPos, CLEAR);
+    }
+
     runRobot() {
         for (const dir of this.robotMoves) {
             const target = this.adjacentPos(this.robotPos, dir);
@@ -50,7 +76,13 @@ export class Warehouse {
                 case BOX:
                     this.tryToPush(target, dir);
                     break;
+                case BOX_LEFT:
+                case BOX_RIGHT:
+                    this.tryToPushWideBox(target, dir);
+                    break;
             }
+
+            return; // just one step for now.
         }
     }
 
@@ -71,13 +103,38 @@ export class Warehouse {
         while (this.contentsAt(gapScan) === BOX) {
             gapScan = this.adjacentPos(gapScan, dir);
         }
-
         switch(this.contentsAt(gapScan)) {
             case WALL: break;
             case CLEAR:
                 this.setContentsAt(gapScan, BOX);
                 this.setContentsAt(target, CLEAR);
                 this.moveRobotTo(target);
+        }
+    }
+
+    private tryToPushWideBox(target: Pos, dir: any) {
+        // Only works left and right to begin with.
+        let gapScan = this.adjacentPos(target, dir);
+        while ([BOX_LEFT, BOX_RIGHT].includes(this.contentsAt(gapScan))) {
+            // Step twice, past the wide box.
+            gapScan = this.adjacentPos(gapScan, dir);
+            gapScan = this.adjacentPos(gapScan, dir);
+        }
+        switch(this.contentsAt(gapScan)) {
+            case WALL: break;
+            case CLEAR:
+                // todo: shuffle everything, we can't just take the first
+                // todo: and pop it on the end.
+                let shuffleContent = this.contentsAt(target);
+                let shuffleTarget = this.adjacentPos(target, dir);
+                this.setContentsAt(target, CLEAR);
+                this.moveRobotTo(target);
+                while(shuffleContent !== CLEAR) {
+                    let nextShuffleContent = this.contentsAt(shuffleTarget);
+                    this.setContentsAt(shuffleTarget, shuffleContent);
+                    shuffleContent = nextShuffleContent;
+                    shuffleTarget = this.adjacentPos(shuffleTarget, dir);
+                }
         }
     }
 
@@ -107,6 +164,15 @@ export class Warehouse {
 export async function solvePart1(lines: Sequence<string>) {
     const warehouse = await Warehouse.buildFromDescription(lines);
     warehouse.runRobot();
+    return warehouse.sumOfBoxCoordinates();
+}
+
+export async function solvePart2(lines: Sequence<string>) {
+    const warehouse = await Warehouse.buildWideFromDescription(lines);
+    warehouse.display();
+    warehouse.runRobot();
+    console.log("")
+    warehouse.display();
     return warehouse.sumOfBoxCoordinates();
 }
 
