@@ -10,8 +10,8 @@ describe("Part 1", () => {
             "Prize: X=8400, Y=5400",
         ];
         const machine = Machine.buildFromDescription(lines);
-        expect(machine.canWin()).toBe(true);
-        expect(machine.cheapestWin()).toBe(280);
+        expect(machine.canWin).toBe(true);
+        expect(machine.cheapestWin).toBe(280);
     });
 
     it("Solves example", async () => {

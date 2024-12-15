@@ -3,9 +3,33 @@ import {linesFromFile, Sequence} from "generator-sequences";
 export type XY = {x: number, y: number};
 
 export class Machine {
+    readonly canWin: boolean;
+    readonly cheapestWin: number;
+
     private constructor(private readonly aMove: XY,
                         private readonly bMove: XY,
-                        private readonly prize: XY) {}
+                        private readonly prize: XY) {
+
+        const candidates: {aPushes: number, bPushes: number}[] = [];
+        for (let aPushes = 0; aPushes <= 100; aPushes++) {
+            const aContribution = aPushes * aMove.x;
+            if (aContribution > prize.x) break;
+
+            for (let bPushes = 0; bPushes <= 100; bPushes++) {
+                const bContribution = bPushes * bMove.x;
+                if (aContribution + bContribution > prize.x) break;
+                if (aContribution + bContribution === prize.x) {
+                    if (aPushes * aMove.y + bPushes * bMove.y === prize.y) {
+                        candidates.push({aPushes, bPushes});
+                    }
+                }
+            }
+        }
+
+        this.canWin = candidates.length > 0;
+        const costs = candidates.map(({aPushes, bPushes}) => aPushes * 3 + bPushes);
+        this.cheapestWin = Math.min(...costs);
+    }
 
     static buildFromDescription(lines: string[]) {
         const up = new Error(`Unexpected format: ${lines}`);
@@ -24,17 +48,19 @@ export class Machine {
 
         return new Machine(aMove, bMove, prize);
     }
-
-    canWin(): any {
-        throw new Error("Method not implemented.");
-    }
-
-    cheapestWin(): any {
-        throw new Error("Method not implemented.");
-    }
 }
+
+
 export async function solvePart1(lines: Sequence<string>) {
-    return "Hello, World!";
+    const lineArray = await lines.toArray();
+    const machines: Machine[] = [];
+    for (let i = 0; i < lineArray.length;) {
+        const description = lineArray.slice(i, i+3);
+        machines.push(Machine.buildFromDescription(description));
+        i += 4;
+    }
+    const winnable = machines.filter(m => m.canWin);
+    return winnable.reduce((acc, val) => acc + val.cheapestWin, 0);
 }
 
 // If this script was invoked directly on the command line:
