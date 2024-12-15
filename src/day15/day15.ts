@@ -1,5 +1,6 @@
 import {linesFromFile, Sequence} from "generator-sequences";
 import {con} from "../day07/day07.js";
+import {FifoQueue} from "../utils/graphSearch.js";
 
 const WALL = "#";
 const BOX = "O";
@@ -59,30 +60,24 @@ export class Warehouse {
 
     display() {
         this.setContentsAt(this.robotPos, ROBOT);
-        for (const row of this.grid) {
-            console.log(row.join(""));
-        }
+        const result = this.grid.map(row => row.join(""));
         this.setContentsAt(this.robotPos, CLEAR);
+        return result;
     }
 
     runRobot() {
         for (const dir of this.robotMoves) {
             const target = this.adjacentPos(this.robotPos, dir);
-            switch(this.contentsAt(target)) {
-                case WALL: break;
-                case CLEAR:
-                    this.moveRobotTo(target);
-                    break;
-                case BOX:
-                    this.tryToPush(target, dir);
-                    break;
-                case BOX_LEFT:
-                case BOX_RIGHT:
-                    this.tryToPushWideBox(target, dir);
-                    break;
-            }
+            const inTheWay = this.contentsAt(target);
 
-            return; // just one step for now.
+            if (inTheWay === WALL) continue;
+            if (inTheWay === CLEAR) this.moveRobotTo(target);
+            if (inTheWay === BOX) this.tryToPush(target, dir);
+
+            if ([BOX_LEFT, BOX_RIGHT].includes(inTheWay)) {
+                if ("<>".includes(dir)) this.tryToPushWideAlongRow(target, dir);
+                else this.tryToPushWideAlongCol(target, dir);
+            }
         }
     }
 
@@ -112,8 +107,7 @@ export class Warehouse {
         }
     }
 
-    private tryToPushWideBox(target: Pos, dir: any) {
-        // Only works left and right to begin with.
+    private tryToPushWideAlongRow(target: Pos, dir: any) {
         let gapScan = this.adjacentPos(target, dir);
         while ([BOX_LEFT, BOX_RIGHT].includes(this.contentsAt(gapScan))) {
             // Step twice, past the wide box.
@@ -123,8 +117,8 @@ export class Warehouse {
         switch(this.contentsAt(gapScan)) {
             case WALL: break;
             case CLEAR:
-                // todo: shuffle everything, we can't just take the first
-                // todo: and pop it on the end.
+                // Shuffle everything, we can't just take the first
+                // and pop it on the end.
                 let shuffleContent = this.contentsAt(target);
                 let shuffleTarget = this.adjacentPos(target, dir);
                 this.setContentsAt(target, CLEAR);
@@ -136,6 +130,47 @@ export class Warehouse {
                     shuffleTarget = this.adjacentPos(shuffleTarget, dir);
                 }
         }
+    }
+
+    private tryToPushWideAlongCol(target: Pos, dir: string) {
+        const save = (p: Pos) => JSON.stringify(p);
+        const load = (s: string) => JSON.parse(s) as Pos;
+
+        const toCheck = new FifoQueue<Pos>();
+        toCheck.push(target);
+        const canMoveIfNoBlockersFound = new Set<string>();
+
+        while (!toCheck.isEmpty()) {
+            const thisHalf = toCheck.pull()!;
+            const otherHalf = this.otherHalfOfBox(thisHalf);
+
+            for (const halfBox of [thisHalf, otherHalf]) {
+                const posThisNeedsToMoveInto = this.adjacentPos(halfBox, dir);
+                const inTheWay = this.contentsAt(posThisNeedsToMoveInto);
+                if (inTheWay === WALL) return;
+                if (inTheWay === CLEAR) continue;
+                if ([BOX_LEFT, BOX_RIGHT].includes(inTheWay)) {
+                    toCheck.push(posThisNeedsToMoveInto);
+                }
+            }
+            canMoveIfNoBlockersFound.add(save(thisHalf));
+            canMoveIfNoBlockersFound.add(save(otherHalf));
+        }
+
+        // Got here? Then no blockers were found!
+        const letsMove = [...canMoveIfNoBlockersFound].map(load);
+        const letsMoveInOrder = letsMove.sort((a,b) => a.row - b.row);
+        for (const halfBoxPos of letsMoveInOrder) {
+            const moveTo = this.adjacentPos(halfBoxPos, dir);
+            this.setContentsAt(moveTo, this.contentsAt(halfBoxPos));
+            this.setContentsAt(halfBoxPos, CLEAR);
+        }
+        this.moveRobotTo(target);
+    }
+
+    private otherHalfOfBox(target: Pos) {
+        const col = this.contentsAt(target) === "[" ? target.col+1 : target.col-1;
+        return {row: target.row, col};
     }
 
     private adjacentPos(current: Pos, dir: string) {
@@ -152,7 +187,7 @@ export class Warehouse {
         let total = 0;
         for (let row = 0; row < this.grid.length; row++) {
             for (let col = 0; col < this.grid[0].length; col++) {
-                if (this.contentsAt({row, col}) === BOX) {
+                if ([BOX, BOX_LEFT].includes(this.contentsAt({row, col}))) {
                     total += (row * 100) + col;
                 }
             }
@@ -169,15 +204,13 @@ export async function solvePart1(lines: Sequence<string>) {
 
 export async function solvePart2(lines: Sequence<string>) {
     const warehouse = await Warehouse.buildWideFromDescription(lines);
-    warehouse.display();
     warehouse.runRobot();
-    console.log("")
-    warehouse.display();
+    console.log(warehouse.display());
     return warehouse.sumOfBoxCoordinates();
 }
 
 // If this script was invoked directly on the command line:
 if (`file://${process.argv[1]}` === import.meta.url) {
     const filepath = `${import.meta.dirname}/day15.input.txt`;
-    console.log(await solvePart1(linesFromFile(filepath)));
+    console.log(await solvePart2(linesFromFile(filepath)));
 }
