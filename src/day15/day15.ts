@@ -1,5 +1,4 @@
 import {linesFromFile, Sequence} from "generator-sequences";
-import {con} from "../day07/day07.js";
 import {FifoQueue} from "../utils/graphSearch.js";
 
 const WALL = "#";
@@ -109,6 +108,7 @@ export class Warehouse {
 
     private tryToPushWideAlongRow(target: Pos, dir: any) {
         let gapScan = this.adjacentPos(target, dir);
+        gapScan = this.adjacentPos(gapScan, dir);
         while ([BOX_LEFT, BOX_RIGHT].includes(this.contentsAt(gapScan))) {
             // Step twice, past the wide box.
             gapScan = this.adjacentPos(gapScan, dir);
@@ -159,8 +159,9 @@ export class Warehouse {
 
         // Got here? Then no blockers were found!
         const letsMove = [...canMoveIfNoBlockersFound].map(load);
-        const letsMoveInOrder = letsMove.sort((a,b) => a.row - b.row);
-        for (const halfBoxPos of letsMoveInOrder) {
+        letsMove.sort((a,b) => dir === "^" ? (a.row - b.row) : (b.row - a.row));
+
+        for (const halfBoxPos of letsMove) {
             const moveTo = this.adjacentPos(halfBoxPos, dir);
             this.setContentsAt(moveTo, this.contentsAt(halfBoxPos));
             this.setContentsAt(halfBoxPos, CLEAR);
@@ -205,7 +206,6 @@ export async function solvePart1(lines: Sequence<string>) {
 export async function solvePart2(lines: Sequence<string>) {
     const warehouse = await Warehouse.buildWideFromDescription(lines);
     warehouse.runRobot();
-    console.log(warehouse.display());
     return warehouse.sumOfBoxCoordinates();
 }
 

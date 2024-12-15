@@ -74,5 +74,6 @@ describe("Part 2", () => {
             "##......[][]..[]..##",
             "####################",
         ]);
+        expect(warehouse.sumOfBoxCoordinates()).toBe(9021);
     });
 });
