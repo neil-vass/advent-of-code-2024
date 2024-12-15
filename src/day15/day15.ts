@@ -42,9 +42,15 @@ export class Warehouse {
     runRobot() {
         for (const dir of this.robotMoves) {
             const target = this.adjacentPos(this.robotPos, dir);
-            if (this.contentsAt(target) === WALL) continue;
-            if (this.contentsAt(target) === CLEAR) this.moveRobotTo(target);
-            if (this.contentsAt(target) === BOX) this.tryToPush(target, dir);
+            switch(this.contentsAt(target)) {
+                case WALL: break;
+                case CLEAR:
+                    this.moveRobotTo(target);
+                    break;
+                case BOX:
+                    this.tryToPush(target, dir);
+                    break;
+            }
         }
     }
 
@@ -65,28 +71,24 @@ export class Warehouse {
         while (this.contentsAt(gapScan) === BOX) {
             gapScan = this.adjacentPos(gapScan, dir);
         }
-        if (this.contentsAt(gapScan) === WALL) return;
-        if (this.contentsAt(gapScan) === CLEAR) {
-            this.setContentsAt(gapScan, BOX);
-            this.setContentsAt(target, CLEAR);
-            this.moveRobotTo(target);
+
+        switch(this.contentsAt(gapScan)) {
+            case WALL: break;
+            case CLEAR:
+                this.setContentsAt(gapScan, BOX);
+                this.setContentsAt(target, CLEAR);
+                this.moveRobotTo(target);
         }
     }
 
     private adjacentPos(current: Pos, dir: string) {
         switch(dir) {
-            case "<":
-                return { row: current.row, col: current.col-1 };
-            case "^":
-                return { row: current.row-1, col: current.col };
-            case ">":
-                return { row: current.row, col: current.col+1 };
-            case "v":
-                return { row: current.row+1, col: current.col };
-            default:
-                throw new Error(`Unknown direction: ${dir}`);
+            case "<": return { row: current.row, col: current.col-1 };
+            case "^": return { row: current.row-1, col: current.col };
+            case ">": return { row: current.row, col: current.col+1 };
+            case "v": return { row: current.row+1, col: current.col };
+            default: throw new Error(`Unknown direction: ${dir}`);
         }
-
     }
 
     sumOfBoxCoordinates() {
