@@ -10,25 +10,23 @@ export class Machine {
                         readonly bMove: XY,
                         readonly prize: XY) {
 
-        const candidates: {aPushes: number, bPushes: number}[] = [];
-        for (let aPushes = 0; aPushes <= 100; aPushes++) {
-            const aContribution = aPushes * aMove.x;
-            if (aContribution > prize.x) break;
+        // Cross multiplication method
+        const [a1, b1, c1] = [aMove.x, bMove.x, -prize.x];
+        const [a2, b2, c2] = [aMove.y, bMove.y, -prize.y];
+        const aPushes = (b1*c2 - b2*c1) / (a1*b2 - a2*b1);
+        const bPushes = (c1*a2 - c2*a1) / (a1*b2 - a2*b1);
 
-            for (let bPushes = 0; bPushes <= 100; bPushes++) {
-                const bContribution = bPushes * bMove.x;
-                if (aContribution + bContribution > prize.x) break;
-                if (aContribution + bContribution === prize.x) {
-                    if (aPushes * aMove.y + bPushes * bMove.y === prize.y) {
-                        candidates.push({aPushes, bPushes});
-                    }
-                }
-            }
+        if(aPushes > Number.MAX_SAFE_INTEGER || bPushes > Number.MAX_SAFE_INTEGER) {
+            throw new Error(`Numbers are too big to handle`);
         }
 
-        this.canWin = candidates.length > 0;
-        const costs = candidates.map(({aPushes, bPushes}) => aPushes * 3 + bPushes);
-        this.cheapestWin = Math.min(...costs);
+        if(Number.isInteger(aPushes) && Number.isInteger(bPushes)) {
+            this.canWin = true;
+            this.cheapestWin = aPushes * 3 + bPushes;
+        } else {
+            this.canWin = false;
+            this.cheapestWin = Infinity;
+        }
     }
 
     static buildFromDescription(lines: string[], offset=0) {
@@ -51,20 +49,24 @@ export class Machine {
 }
 
 
-export async function solvePart1(lines: Sequence<string>) {
+export async function solvePart1(lines: Sequence<string>, offset=0) {
     const lineArray = await lines.toArray();
     const machines: Machine[] = [];
     for (let i = 0; i < lineArray.length;) {
         const description = lineArray.slice(i, i+3);
-        machines.push(Machine.buildFromDescription(description));
+        machines.push(Machine.buildFromDescription(description, offset));
         i += 4;
     }
     const winnable = machines.filter(m => m.canWin);
     return winnable.reduce((acc, val) => acc + val.cheapestWin, 0);
 }
 
+export async function solvePart2(lines: Sequence<string>) {
+    return solvePart1(lines, 10000000000000);
+}
+
 // If this script was invoked directly on the command line:
 if (`file://${process.argv[1]}` === import.meta.url) {
     const filepath = `${import.meta.dirname}/day13.input.txt`;
-    console.log(await solvePart1(linesFromFile(filepath)));
+    console.log(await solvePart2(linesFromFile(filepath)));
 }
