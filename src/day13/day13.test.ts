@@ -35,3 +35,17 @@ describe("Part 1", () => {
         expect(await solvePart1(lines)).toBe(480);
     });
 });
+
+describe("Part 2", () => {
+    it("Creates machine", () => {
+        const lines = [
+            "Button A: X+94, Y+34",
+            "Button B: X+22, Y+67",
+            "Prize: X=8400, Y=5400",
+        ];
+        const machine = Machine.buildFromDescription(lines, 10000000000000);
+        expect(machine.prize).toStrictEqual({x:10000000008400, y:10000000005400});
+        expect(machine.canWin).toBe(true);
+        expect(machine.cheapestWin).toBe(0);
+    });
+});

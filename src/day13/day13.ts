@@ -6,9 +6,9 @@ export class Machine {
     readonly canWin: boolean;
     readonly cheapestWin: number;
 
-    private constructor(private readonly aMove: XY,
-                        private readonly bMove: XY,
-                        private readonly prize: XY) {
+    private constructor(readonly aMove: XY,
+                        readonly bMove: XY,
+                        readonly prize: XY) {
 
         const candidates: {aPushes: number, bPushes: number}[] = [];
         for (let aPushes = 0; aPushes <= 100; aPushes++) {
@@ -31,7 +31,7 @@ export class Machine {
         this.cheapestWin = Math.min(...costs);
     }
 
-    static buildFromDescription(lines: string[]) {
+    static buildFromDescription(lines: string[], offset=0) {
         const up = new Error(`Unexpected format: ${lines}`);
 
         const aMatch = lines[0].match(/^Button A: X\+(\d+), Y\+(\d+)$/);
@@ -44,7 +44,7 @@ export class Machine {
 
         const prizeMatch = lines[2].match(/^Prize: X=(\d+), Y=(\d+)$/);
         if (!prizeMatch) throw up;
-        const prize = {x: +prizeMatch[1], y: +prizeMatch[2]};
+        const prize = {x: +prizeMatch[1] + offset, y: +prizeMatch[2] + offset};
 
         return new Machine(aMove, bMove, prize);
     }
