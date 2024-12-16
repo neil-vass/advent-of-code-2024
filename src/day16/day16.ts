@@ -1,5 +1,5 @@
 import {linesFromFile, Sequence} from "generator-sequences";
-import {A_starSearch, MinPriorityQueue, Stack, WeightedGraph} from "../utils/graphSearch.js";
+import {A_starSearch, FifoQueue, MinPriorityQueue, Stack, WeightedGraph} from "../utils/graphSearch.js";
 
 type Pos = {row: number, col: number};
 type Reindeer = Pos & {dir: string};
@@ -38,7 +38,7 @@ export class ReindeerMaze implements WeightedGraph<Reindeer> {
 
         type path = {visited: Set<string>, reindeer: Reindeer, cost: number};
 
-        const frontier = new Stack<path>();
+        const frontier = new FifoQueue<path>();
         const reached = new Map<string, number>();
         let positionsOnBestPaths = new Set<string>();
 
