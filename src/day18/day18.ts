@@ -56,7 +56,18 @@ export class Pushdown implements WeightedGraph<Pos> {
     }
 
     firstBlocker() {
-        return "6,1";
+        while (this.nextByteIdx < this.bytes.length) {
+            try {
+                const byte = this.bytes[this.nextByteIdx];
+                this.bytesSet.add(JSON.stringify(byte));
+                this.shortestPathToGoal();
+                this.nextByteIdx++;
+            } catch {
+                const blocker = this.bytes[this.nextByteIdx];
+                return `${blocker.x},${blocker.y}`;
+            }
+        }
+        return "No blockers found";
     }
 }
 
@@ -76,5 +87,5 @@ if (`file://${process.argv[1]}` === import.meta.url) {
     const lines = linesFromFile(filepath)
     const goal = {x: 70, y: 70};
     const byteLimit = 1024;
-    console.log(await solvePart1(lines, goal, byteLimit));
+    console.log(await solvePart2(lines, goal, byteLimit));
 }
