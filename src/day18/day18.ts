@@ -59,15 +59,23 @@ export class Pushdown implements WeightedGraph<Pos> {
     }
 
     firstBlocker() {
+        // A_starSearch throws an error when there's no possible path.
         while (this.nextByteIdx < this.allBytes.length) {
             try {
                 const byte = this.allBytes[this.nextByteIdx];
                 this.fallenBytes.add(JSON.stringify(byte));
                 this.shortestPathToGoal();
                 this.nextByteIdx++;
-            } catch {
-                const blocker = this.allBytes[this.nextByteIdx];
-                return `${blocker.x},${blocker.y}`;
+            } catch(e) {
+                if (e instanceof Error &&
+                    e.message === "No path to the goal was found.") {
+                    const blocker = this.allBytes[this.nextByteIdx];
+                    return `${blocker.x},${blocker.y}`;
+                }
+                else {
+                    // Did not expect this!
+                    throw e;
+                }
             }
         }
         return "No blockers found";
