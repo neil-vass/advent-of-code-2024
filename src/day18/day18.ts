@@ -4,24 +4,27 @@ import {A_starSearch, WeightedGraph} from "../utils/graphSearch.js";
 type Pos = {x: number, y: number};
 
 export class Pushdown implements WeightedGraph<Pos> {
-    readonly bytesSet: Set<string>;
-    private constructor(private readonly bytes: Pos[],
+    readonly fallenBytes: Set<string>;
+
+    private constructor(private readonly allBytes: Pos[],
                         private readonly goal: Pos,
                         private nextByteIdx: number) {
-        this.bytesSet = new Set(bytes.slice(0, nextByteIdx).map(b => JSON.stringify(b)));
+
+        const fallenSoFar = allBytes.slice(0, nextByteIdx);
+        this.fallenBytes = new Set(fallenSoFar.map(b => JSON.stringify(b)));
     }
 
     static async buildFromDescription(lines: Sequence<string>,
                                       goal: Pos,
-                                      byteLimit=1024) {
+                                      initialByteLimit: number) {
 
-        const toPos = (line: string) => {
+        function toPos(line: string) {
             const [x,y] = line.split(",").map(Number);
             return {x,y};
         }
 
         const bytes = await lines.map(toPos).toArray();
-        return new Pushdown(bytes, goal, byteLimit);
+        return new Pushdown(bytes, goal, initialByteLimit);
     }
 
     *neighboursWithCosts(currentNode: Pos): Iterable<{ node: Pos; cost: number; }> {
@@ -32,7 +35,7 @@ export class Pushdown implements WeightedGraph<Pos> {
             {x: currentNode.x, y: currentNode.y-1},
         ];
         for (const n of neighbours) {
-            if (this.isInBounds(n) && !this.bytesSet.has(JSON.stringify(currentNode))) {
+            if (this.isInBounds(n) && !this.fallenBytes.has(JSON.stringify(currentNode))) {
                 yield { node: n, cost: 1 };
             }
         }
@@ -56,14 +59,14 @@ export class Pushdown implements WeightedGraph<Pos> {
     }
 
     firstBlocker() {
-        while (this.nextByteIdx < this.bytes.length) {
+        while (this.nextByteIdx < this.allBytes.length) {
             try {
-                const byte = this.bytes[this.nextByteIdx];
-                this.bytesSet.add(JSON.stringify(byte));
+                const byte = this.allBytes[this.nextByteIdx];
+                this.fallenBytes.add(JSON.stringify(byte));
                 this.shortestPathToGoal();
                 this.nextByteIdx++;
             } catch {
-                const blocker = this.bytes[this.nextByteIdx];
+                const blocker = this.allBytes[this.nextByteIdx];
                 return `${blocker.x},${blocker.y}`;
             }
         }
@@ -71,21 +74,22 @@ export class Pushdown implements WeightedGraph<Pos> {
     }
 }
 
-export async function solvePart1(lines: Sequence<string>, goal: Pos, byteLimit=1024) {
+export async function solvePart1(lines: Sequence<string>) {
+    const goal = {x: 70, y: 70};
+    const byteLimit = 1024;
     const pushdown = await Pushdown.buildFromDescription(lines, goal, byteLimit);
     return pushdown.shortestPathToGoal();
 }
 
-export async function solvePart2(lines: Sequence<string>, goal: Pos, byteLimit=1024) {
-    const pushdown = await Pushdown.buildFromDescription(lines, goal, byteLimit);
+export async function solvePart2(lines: Sequence<string>) {
+    const goal = {x: 70, y: 70};
+    const initialByteLimit = 1024;
+    const pushdown = await Pushdown.buildFromDescription(lines, goal, initialByteLimit);
     return pushdown.firstBlocker();
 }
 
 // If this script was invoked directly on the command line:
 if (`file://${process.argv[1]}` === import.meta.url) {
     const filepath = `${import.meta.dirname}/day18.input.txt`;
-    const lines = linesFromFile(filepath)
-    const goal = {x: 70, y: 70};
-    const byteLimit = 1024;
-    console.log(await solvePart2(lines, goal, byteLimit));
+    console.log(await solvePart2(linesFromFile(filepath)));
 }

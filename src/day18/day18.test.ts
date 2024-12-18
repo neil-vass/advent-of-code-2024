@@ -1,5 +1,5 @@
 import {expect, describe, it} from "vitest";
-import {solvePart1, solvePart2} from "./day18.js";
+import {Pushdown, solvePart1, solvePart2} from "./day18.js";
 import {Sequence} from "generator-sequences";
 
 describe("Part 1", () => {
@@ -33,7 +33,8 @@ describe("Part 1", () => {
         ]);
         const goal = {x: 6, y: 6};
         const byteLimit = 12;
-        expect(await solvePart1(lines, goal, byteLimit)).toBe(22);
+        const pushdown = await Pushdown.buildFromDescription(lines, goal, byteLimit);
+        expect(pushdown.shortestPathToGoal()).toBe(22);
     });
 });
 
@@ -67,7 +68,8 @@ describe("Part 2", () => {
             "2,0",
         ]);
         const goal = {x: 6, y: 6};
-        const byteLimit = 12;
-        expect(await solvePart2(lines, goal, byteLimit)).toBe("6,1");
+        const initialByteLimit = 12;
+        const pushdown = await Pushdown.buildFromDescription(lines, goal, initialByteLimit);
+        expect(pushdown.firstBlocker()).toBe("6,1");
     });
 });
