@@ -80,7 +80,7 @@ export class Computer {
 
     bst(operand: number) {
         const comboOperand = this.combo(operand);
-        this.b = comboOperand % 8;
+        this.b = comboOperand & 7;
         this.instructionPointer += 2;
     }
 
@@ -99,7 +99,7 @@ export class Computer {
 
     out(operand: number) {
         const comboOperand = this.combo(operand);
-        this.output.push(comboOperand % 8);
+        this.output.push(comboOperand & 7);
         this.instructionPointer += 2;
     }
 
