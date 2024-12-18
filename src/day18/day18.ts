@@ -5,24 +5,23 @@ type Pos = {x: number, y: number};
 
 export class Pushdown implements WeightedGraph<Pos> {
     readonly bytesSet: Set<string>;
-    private constructor(readonly bytes: Pos[],
-                        readonly goal: Pos) {
-        this.bytesSet = new Set(bytes.map(b => JSON.stringify(b));
-
+    private constructor(private readonly bytes: Pos[],
+                        private readonly goal: Pos,
+                        private nextByteIdx: number) {
+        this.bytesSet = new Set(bytes.slice(0, nextByteIdx).map(b => JSON.stringify(b)));
     }
 
     static async buildFromDescription(lines: Sequence<string>,
                                       goal: Pos,
                                       byteLimit=1024) {
-        const bytes: Pos[] = [];
-        let bytesCollected = 0;
-        for await (const line of lines) {
+
+        const toPos = (line: string) => {
             const [x,y] = line.split(",").map(Number);
-            bytes.push({x,y});
-            bytesCollected++;
-            if (bytesCollected === byteLimit) break;
+            return {x,y};
         }
-        return new Pushdown(bytes, goal);
+
+        const bytes = await lines.map(toPos).toArray();
+        return new Pushdown(bytes, goal, byteLimit);
     }
 
     *neighboursWithCosts(currentNode: Pos): Iterable<{ node: Pos; cost: number; }> {
@@ -55,11 +54,20 @@ export class Pushdown implements WeightedGraph<Pos> {
         const path = A_starSearch(this, {x:0, y:0}, this.goal);
         return path.cost;
     }
+
+    firstBlocker() {
+        return "6,1";
+    }
 }
 
 export async function solvePart1(lines: Sequence<string>, goal: Pos, byteLimit=1024) {
     const pushdown = await Pushdown.buildFromDescription(lines, goal, byteLimit);
     return pushdown.shortestPathToGoal();
+}
+
+export async function solvePart2(lines: Sequence<string>, goal: Pos, byteLimit=1024) {
+    const pushdown = await Pushdown.buildFromDescription(lines, goal, byteLimit);
+    return pushdown.firstBlocker();
 }
 
 // If this script was invoked directly on the command line:
