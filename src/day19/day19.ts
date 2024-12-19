@@ -2,13 +2,30 @@ import {linesFromFile, Sequence} from "generator-sequences";
 import {Stack} from "../utils/graphSearch.js";
 
 export function availableTowels(line: string) {
-    return new Set(line.split(", "));
+    const allTowels = line.split(", ");
+    const sizedTowels = new Map<number, string[]>();
+    let minLength = Infinity;
+    let maxLength = 0;
+    for (const t of allTowels) {
+        if (!sizedTowels.has(t.length)) sizedTowels.set(t.length, []);
+        sizedTowels.get(t.length)!.push(t);
+        minLength = Math.min(minLength, t.length);
+        maxLength = Math.max(maxLength, t.length);
+    }
+
+    let len = minLength+1;
+    const keepers = sizedTowels.get(minLength)!;
+    while (len <= maxLength) {
+        const someTowels = sizedTowels.get(len);
+        if(!someTowels) continue;
+        const cantMake = someTowels.filter(t => !isPossible(t, keepers));
+        keepers.push(...cantMake);
+        len++;
+    }
+    return keepers;
 }
 
-let checked = 0;
-export function isPossible(pattern: string, towels: Set<string>) {
-    checked++;
-    console.log(`checking ${checked}: ${pattern}`);
+export function isPossible(pattern: string, towels: Iterable<string>) {
     // Backtrack with Stack
     const possibilities = new Stack<{ rp: string, possible: string }>();
     let remainingPattern = pattern;
