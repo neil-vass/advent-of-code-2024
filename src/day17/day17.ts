@@ -1,13 +1,20 @@
 import {linesFromFile, Sequence} from "generator-sequences";
+import {Stack} from "../utils/graphSearch.js";
 
 export class Computer {
     private instructionPointer = 0;
     private output: number[] = [];
+    private a: bigint;
+    private b: bigint;
+    private c: bigint;
 
-    private constructor(private a: number,
-                        private b: number,
-                        private c: number,
-                        readonly instructions: number[]) {}
+
+    private constructor(a: number,
+                        b: number,
+                        c: number,
+                        readonly instructions: number[]) {
+        [this.a, this.b, this.c] = [BigInt(a), BigInt(b), BigInt(c)];
+    }
 
     static async buildFromDescription(lines: Sequence<string>) {
         const linesArray = await lines.toArray();
@@ -22,13 +29,13 @@ export class Computer {
     }
 
     getRegisterValues() {
-        return { a: this.a, b: this.b, c: this.c };
+        return { a: Number(this.a), b: Number(this.b), c: Number(this.c) };
     }
 
     setRegisterValues(values: {a: number, b: number, c: number}) {
-        this.a = values.a;
-        this.b = values.b;
-        this.c = values.c;
+        this.a = BigInt(values.a);
+        this.b = BigInt(values.b);
+        this.c = BigInt(values.c);
     }
 
     getProgram() {
@@ -68,24 +75,24 @@ export class Computer {
 
     adv(operand: number) {
         const comboOperand = this.combo(operand);
-        const denominator = Math.pow(2, comboOperand);
-        this.a = Math.floor(this.a/denominator);
+        const denominator = BigInt(Math.pow(2, Number(comboOperand)));
+        this.a = BigInt(Math.floor(Number(this.a/denominator)));
         this.instructionPointer += 2;
     }
 
     bxl(operand: number) {
-        this.b = Number(BigInt(this.b) ^ BigInt(operand));
+        this.b ^= BigInt(operand);
         this.instructionPointer += 2;
     }
 
     bst(operand: number) {
         const comboOperand = this.combo(operand);
-        this.b = comboOperand & 7;
+        this.b = comboOperand & 7n;
         this.instructionPointer += 2;
     }
 
     jnz(operand: number) {
-        if (this.a === 0) {
+        if (this.a === 0n) {
             this.instructionPointer += 2;
         } else {
             this.instructionPointer = operand;
@@ -93,27 +100,35 @@ export class Computer {
     }
 
     bxc(operand: number) {
-        this.b = Number(BigInt(this.b) ^ BigInt(this.c));
+        this.b ^= this.c;
         this.instructionPointer += 2;
     }
 
     out(operand: number) {
         const comboOperand = this.combo(operand);
-        this.output.push(comboOperand & 7);
+        try {
+            this.output.push(Number(comboOperand & 7n));
+        } catch(up) {
+            console.log(this.output.length)
+            console.log(this.output)
+            console.log(comboOperand)
+            console.log(this.getRegisterValues())
+            throw up;
+        }
         this.instructionPointer += 2;
     }
 
     bdv(operand: number) {
         const comboOperand = this.combo(operand);
-        const denominator = Math.pow(2, comboOperand);
-        this.b = Math.floor(this.a/denominator);
+        const denominator = BigInt(Math.pow(2, Number(comboOperand)));
+        this.b = BigInt(Math.floor(Number(this.a/denominator)));
         this.instructionPointer += 2;
     }
 
     cdv(operand: number) {
         const comboOperand = this.combo(operand);
-        const denominator = Math.pow(2, comboOperand);
-        this.c = Math.floor(this.a/denominator);
+        const denominator = BigInt(Math.pow(2, Number(comboOperand)));
+        this.c = BigInt(Math.floor(Number(this.a/denominator)));
         this.instructionPointer += 2;
     }
 
@@ -123,7 +138,7 @@ export class Computer {
             case 1:
             case 2:
             case 3:
-                return operand;
+                return BigInt(operand);
             case 4:
                 return this.a;
             case 5:
@@ -143,26 +158,27 @@ export async function solvePart1(lines: Sequence<string>) {
 
 export async function solvePart2(lines: Sequence<string>) {
     const computer = await Computer.buildFromDescription(lines);
-    let aSoFar = 0;
+    let aSoFar = 0n;
+    const options = new Stack<{i: number, candidate: bigint}>();
 
-    for (let i=0; i< computer.instructions.length; i++) {
-        let foundMatch = false;
-        for (let octet=0; octet<8; octet++) {
-            const candidate = (aSoFar << 3) + octet;
-            computer.setRegisterValues({a: candidate, b: 0, c: 0});
+    for (let i=0; i < computer.instructions.length; i++) {
+        for (let octet = 7; octet >= 0; octet--) {
+            const candidate = (aSoFar << 3n) + BigInt(octet);
+            computer.setRegisterValues({a: Number(candidate), b: 0, c: 0});
             const output = computer.run();
             const expected = computer.instructions.slice(-(i+1)).join(",");
             const trying = candidate.toString(2).padStart(3*(i+1), "0");
             console.log(`${i}: trying ${trying} gets output: ${output} ... expected: ${expected}`)
             if(output === expected) {
-                foundMatch = true;
-                aSoFar = candidate;
-                break;
+                options.push({i, candidate});
             }
         }
-        if (!foundMatch) throw new Error(`Didn't work!`)
+        if (options.isEmpty()) throw new Error(`Didn't work!`);
+        const option = options.pull()!;
+        i = option.i;
+        aSoFar = option.candidate;
     }
-    return aSoFar;
+    return Number(aSoFar);
 }
 
 // If this script was invoked directly on the command line:
