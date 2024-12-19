@@ -7,7 +7,7 @@ export class Computer {
     private constructor(private a: number,
                         private b: number,
                         private c: number,
-                        private instructions: number[]) {}
+                        readonly instructions: number[]) {}
 
     static async buildFromDescription(lines: Sequence<string>) {
         const linesArray = await lines.toArray();
@@ -74,7 +74,7 @@ export class Computer {
     }
 
     bxl(operand: number) {
-        this.b ^= operand;
+        this.b = Number(BigInt(this.b) ^ BigInt(operand));
         this.instructionPointer += 2;
     }
 
@@ -93,7 +93,7 @@ export class Computer {
     }
 
     bxc(operand: number) {
-        this.b = this.b ^ this.c;
+        this.b = Number(BigInt(this.b) ^ BigInt(this.c));
         this.instructionPointer += 2;
     }
 
@@ -143,28 +143,26 @@ export async function solvePart1(lines: Sequence<string>) {
 
 export async function solvePart2(lines: Sequence<string>) {
     const computer = await Computer.buildFromDescription(lines);
+    let aSoFar = 0;
 
-    for (let i = Math.pow(8,15); i < Math.pow(8,16); i++) {
-        const a = i;
-        computer.setRegisterValues({a, b: 0, c: 0});
-        const output = computer.run(true);
-        if (output === computer.getProgram())
-            console.log(`${a}: ${output.split(",").join("\t")}`);
+    for (let i=0; i< computer.instructions.length; i++) {
+        let foundMatch = false;
+        for (let octet=0; octet<8; octet++) {
+            const candidate = (aSoFar << 3) + octet;
+            computer.setRegisterValues({a: candidate, b: 0, c: 0});
+            const output = computer.run();
+            const expected = computer.instructions.slice(-(i+1)).join(",");
+            const trying = candidate.toString(2).padStart(3*(i+1), "0");
+            console.log(`${i}: trying ${trying} gets output: ${output} ... expected: ${expected}`)
+            if(output === expected) {
+                foundMatch = true;
+                aSoFar = candidate;
+                break;
+            }
+        }
+        if (!foundMatch) throw new Error(`Didn't work!`)
     }
-
-    // const gen = function* () {
-    //     let i = 0;
-    //     while(true) {
-    //         yield i;
-    //         yield i+1;
-    //         i+=16;
-    //     }
-    // }
-    // let candidates = new Sequence(gen());
-    // candidates = candidates.filter(x => x > 1);
-    // for await (const c of candidates) {
-    //     return c;
-    // }
+    return aSoFar;
 }
 
 // If this script was invoked directly on the command line:
