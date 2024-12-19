@@ -47,12 +47,21 @@ export function isPossible(pattern: string, towels: Iterable<string>) {
     return true;
 }
 
+export function letMeCountTheWays(pattern: string, towels: string[]) {
+    return 0;
+}
+
 export async function solvePart1(lines: Sequence<string>) {
     const linesArray = await lines.toArray();
     const towels = availableTowels(linesArray[0]);
     return linesArray.slice(2).filter(p => isPossible(p, towels)).length;
 }
 
+export async function solvePart2(lines: Sequence<string>) {
+    const linesArray = await lines.toArray();
+    const towels = availableTowels(linesArray[0]);
+    return linesArray.slice(2).filter(p => letMeCountTheWays(p, towels)).length;
+}
 // If this script was invoked directly on the command line:
 if (`file://${process.argv[1]}` === import.meta.url) {
     const filepath = `${import.meta.dirname}/day19.input.txt`;
