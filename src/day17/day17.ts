@@ -106,15 +106,7 @@ export class Computer {
 
     out(operand: number) {
         const comboOperand = this.combo(operand);
-        try {
-            this.output.push(Number(comboOperand & 7n));
-        } catch(up) {
-            console.log(this.output.length)
-            console.log(this.output)
-            console.log(comboOperand)
-            console.log(this.getRegisterValues())
-            throw up;
-        }
+        this.output.push(Number(comboOperand & 7n));
         this.instructionPointer += 2;
     }
 
@@ -168,7 +160,7 @@ export async function solvePart2(lines: Sequence<string>) {
             const output = computer.run();
             const expected = computer.instructions.slice(-(i+1)).join(",");
             const trying = candidate.toString(2).padStart(3*(i+1), "0");
-            console.log(`${i}: trying ${trying} gets output: ${output} ... expected: ${expected}`)
+            // console.log(`${i}: trying ${trying} gets output: ${output} ... expected: ${expected}`)
             if(output === expected) {
                 options.push({i, candidate});
             }
