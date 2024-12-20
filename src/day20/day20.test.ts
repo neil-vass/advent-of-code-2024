@@ -1,10 +1,11 @@
-import {expect, describe, it} from "vitest";
+import {expect, describe, it, beforeEach} from "vitest";
 import {Racetrack, solvePart1} from "./day20.js";
 import {Sequence} from "generator-sequences";
 
 describe("Part 1", () => {
-    it("Finds distance without cheats", async () => {
-        const lines = new Sequence([
+    let lines: Sequence<string>;
+    beforeEach(() => {
+        lines = new Sequence([
             "###############",
             "#...#...#.....#",
             "#.#.#.#.#.###.#",
@@ -21,7 +22,16 @@ describe("Part 1", () => {
             "#...#...#...###",
             "###############",
         ]);
+    })
+
+    it("Finds distance without cheats", async () => {
         const racetrack = await Racetrack.buildFromDescription(lines);
-        return racetrack.distance();
+        expect(racetrack.distance()).toBe(84);
+    });
+
+    it("Finds cheats", async () => {
+        const racetrack = await Racetrack.buildFromDescription(lines);
+        const minSavingRequired = 12;
+        expect(racetrack.findCheats(12)).toBe(8);
     });
 });

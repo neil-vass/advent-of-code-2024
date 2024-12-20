@@ -5,7 +5,7 @@ const save = (p: Pos) => JSON.stringify(p)
 const load = (s: string) => JSON.parse(s) as Pos;
 
 export class Racetrack {
-    private route = new Map<string, number>();
+    private route = new Map<string, number>(); // position, time reached
 
     private constructor(readonly grid: string[],
                         readonly start: Pos,
@@ -68,10 +68,35 @@ export class Racetrack {
         return this.route.size-1;
     }
 
+    findCheats(minSavingRequired: number) {
+        let numCheats = 0;
+        // We know there's a wall round the outside
+        for (let row = 1; row < this.grid.length-1; row++) {
+            for (let col = 1; col < this.grid[0].length-1; col++) {
+
+                if(this.grid[row].slice(col, col+3) === ".#.") {
+                    // let's cheat!
+                    const oneSide = this.route.get(save({row,col}))!;
+                    const otherSide = this.route.get(save({row,col: col+2}))!;
+                    // Instead of all the steps in between these points, we only take 2.
+                    const saving = Math.abs(oneSide - otherSide) - 2;
+                    if (saving >= minSavingRequired) numCheats++;
+                } else if (this.grid[row-1][col] === "." && this.grid[row][col] === "#" && this.grid[row+1][col] === ".") {
+                    // let's cheat!
+                    const oneSide = this.route.get(save({row: row-1, col}))!;
+                    const otherSide = this.route.get(save({row: row+1, col}))!;
+                    // Instead of all the steps in between these points, we only take 2.
+                    const saving = Math.abs(oneSide - otherSide) - 2;
+                    if (saving >= minSavingRequired) numCheats++;
+                }
+            }
+        }
+        return numCheats;
+    }
 }
 export async function solvePart1(lines: Sequence<string>) {
     const racetrack = await Racetrack.buildFromDescription(lines);
-    return racetrack.distance();
+    return racetrack.findCheats(100);
 }
 
 // If this script was invoked directly on the command line:
