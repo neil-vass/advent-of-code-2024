@@ -68,39 +68,40 @@ export class Racetrack {
         return this.route.size-1;
     }
 
-    findCheats(minSavingRequired: number) {
+    findCheats(minSavingRequired: number, maxCheatDistance=2) {
         let numCheats = 0;
-        // We know there's a wall round the outside
-        for (let row = 1; row < this.grid.length-1; row++) {
-            for (let col = 1; col < this.grid[0].length-1; col++) {
+        const pointsToCheck = new Set(this.route.keys());
 
-                if(this.grid[row].slice(col, col+3) === ".#.") {
-                    // let's cheat!
-                    const oneSide = this.route.get(save({row,col}))!;
-                    const otherSide = this.route.get(save({row,col: col+2}))!;
-                    // Instead of all the steps in between these points, we only take 2.
-                    const saving = Math.abs(oneSide - otherSide) - 2;
-                    if (saving >= minSavingRequired) numCheats++;
-                } else if (this.grid[row-1][col] === "." && this.grid[row][col] === "#" && this.grid[row+1][col] === ".") {
-                    // let's cheat!
-                    const oneSide = this.route.get(save({row: row-1, col}))!;
-                    const otherSide = this.route.get(save({row: row+1, col}))!;
-                    // Instead of all the steps in between these points, we only take 2.
-                    const saving = Math.abs(oneSide - otherSide) - 2;
-                    if (saving >= minSavingRequired) numCheats++;
-                }
+        while (pointsToCheck.size > 1) {
+            const [oneSide] = pointsToCheck;
+            pointsToCheck.delete(oneSide);
+            for (const otherSide of pointsToCheck) {
+                const cheatDist = this.getDistance(load(oneSide), load(otherSide));
+                if (cheatDist > maxCheatDistance) continue;
+
+                const routeDist = Math.abs(this.route.get(oneSide)! - this.route.get(otherSide)!);
+                const saving = routeDist - cheatDist;
+                if (saving >= minSavingRequired) numCheats++;
             }
         }
+
         return numCheats;
     }
+
+    private getDistance(p1: Pos, p2: Pos) {
+        return Math.abs(p1.row - p2.row) + Math.abs(p1.col - p2.col);
+    }
 }
-export async function solvePart1(lines: Sequence<string>) {
+export async function countCheats(lines: Sequence<string>, minSaving: number, maxDist: number) {
     const racetrack = await Racetrack.buildFromDescription(lines);
-    return racetrack.findCheats(100);
+    return racetrack.findCheats(minSaving, maxDist);
 }
 
 // If this script was invoked directly on the command line:
 if (`file://${process.argv[1]}` === import.meta.url) {
     const filepath = `${import.meta.dirname}/day20.input.txt`;
-    console.log(await solvePart1(linesFromFile(filepath)));
+    const lines = linesFromFile(filepath);
+    const minSaving = 100;
+    const maxDist = 20;
+    console.log(await countCheats(lines, minSaving, maxDist));
 }
