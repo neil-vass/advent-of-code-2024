@@ -1,7 +1,7 @@
 import {linesFromFile, Sequence} from "generator-sequences";
 
 export function reversePath(p: string) {
-    return [...p].map(c => "^v<>"["v^><".indexOf(c)]).join("");
+    return [...p].reverse().map(c => "^v<>"["v^><".indexOf(c)]).join("");
 }
 
 export class Keypad {
@@ -20,26 +20,48 @@ export class Keypad {
         const fromThere = this.keymap[destination][this.currentKey];
         return fromThere.map(reversePath);
     }
+
+    costToSend(sequence: string, sender: Keypad) {
+        // How many keys would the sender need to press to send me
+        // over to each dir key, press it, back to A and press that?
+        let cost = 0;
+        for (const key of sequence + "A") {
+            cost += (sender.shortestPathsTo(key)[0].length + 1) * 2;
+        }
+        return cost;
+    }
 }
 
 export function enterCode(code: string, chain: Keypad[]) {
     // We can optimise one char of the code at a time, since after each of those we know where we end up.
     // All d-pads on "A" and the numpad on the code's char.
-    const presses: string[] = [];
-    let sequenceOnThisPad = code;
-    for (const keypad of chain.toReversed()) {
-        let sequenceOnNextPad = "";
-        for (const key of sequenceOnThisPad) {
-            // Let's just take the first of the shortest paths.
-            // (I'm sure we'll change that later)
-            sequenceOnNextPad += keypad.shortestPathsTo(key)[0] + "A";
-            keypad.currentKey = key;
+    let totalPresses = 0;
+    let requiredSequence = code;
+    for (let i = 0; i < chain.length; i++) {
+        let nextSequence = "";
+        for (const key of requiredSequence) {
+            const options = chain[i].shortestPathsTo(key);
+            if (i === chain.length-1) {
+                totalPresses += Math.min(...options.map(op => op.length));
+            } else {
+                let lowestCost = Infinity;
+                let lowestSequence = "";
+                for (const op of options) {
+                    const cost = chain[i].costToSend(op, chain[i+1]);
+                    if (cost < lowestCost) {
+                        lowestCost = cost;
+                        lowestSequence = op;
+                    }
+                }
+                nextSequence += lowestSequence + "A";
+            }
+            if (i === 0) chain[i].currentKey = key;
         }
-        // Time to move on!
-        presses.unshift(sequenceOnThisPad);
-        sequenceOnThisPad = sequenceOnNextPad;
+        console.log(nextSequence)
+        requiredSequence = nextSequence;
     }
-    return presses;
+
+    return totalPresses;
 }
 
 export async function solvePart1(lines: Sequence<string>) {
@@ -155,3 +177,7 @@ export const directionKeymap: Keymap = {
     },
     ">": {}
 };
+
+
+
+
