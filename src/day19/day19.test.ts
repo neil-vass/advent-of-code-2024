@@ -1,5 +1,13 @@
 import {expect, describe, it} from "vitest";
-import {availableTowels, isPossible, letMeCountTheWays, solvePart1, solvePart2} from "./day19.js";
+import {
+    availableTowels,
+    availableTowelsV2,
+    isPossible,
+    letMeCountTheWays,
+    madeFrom,
+    solvePart1,
+    solvePart2
+} from "./day19.js";
 import {Sequence} from "generator-sequences";
 
 describe("Part 1", () => {
@@ -32,9 +40,16 @@ describe("Part 1", () => {
 });
 
 describe("Part 2", () => {
+    it("Tells you how to make a pattern", () => {
+        const towels = "r, wr, b, g, bwu";
+        expect(madeFrom("br", towels)).toStrictEqual(
+            { success: true, tokens: ["b", "r"] });
+    });
+
     it("Counts ways to make a pattern", () => {
-        const towels = availableTowels("r, wr, b, g, bwu, rb, gb, br");
-        expect(letMeCountTheWays("brwrr", towels)).toBe(2);
+        const towels = availableTowelsV2("r, wr, b, g, bwu, rb, gb, br");
+        expect(madeFrom("br", towels)).toStrictEqual(
+            { success: true, tokens: ["b", "r"] });
     });
 
     it("Solves example", async () => {

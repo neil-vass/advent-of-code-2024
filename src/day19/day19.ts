@@ -26,7 +26,6 @@ export function availableTowels(line: string) {
 }
 
 export function isPossible(pattern: string, towels: Iterable<string>) {
-    // Backtrack with Stack
     const possibilities = new Stack<{ rp: string, possible: string }>();
     let remainingPattern = pattern;
     while (remainingPattern.length > 0) {
@@ -45,6 +44,58 @@ export function isPossible(pattern: string, towels: Iterable<string>) {
         }
     }
     return true;
+}
+
+export function availableTowelsV2(line: string) {
+    const allTowels = line.split(", ");
+    const sizedTowels = new Map<number, string[]>();
+    let minLength = Infinity;
+    let maxLength = 0;
+    for (const t of allTowels) {
+        if (!sizedTowels.has(t.length)) sizedTowels.set(t.length, []);
+        sizedTowels.get(t.length)!.push(t);
+        minLength = Math.min(minLength, t.length);
+        maxLength = Math.max(maxLength, t.length);
+    }
+
+    let len = minLength+1;
+    const keepers = sizedTowels.get(minLength)!;
+    while (len <= maxLength) {
+        const someTowels = sizedTowels.get(len);
+        if(!someTowels) continue;
+        const cantMake = someTowels.filter(t => !isPossible(t, keepers));
+        keepers.push(...cantMake);
+        len++;
+    }
+    return keepers;
+}
+
+export function madeFrom(pattern: string, towels: Iterable<string>) {
+    const possibilities = new Stack<{ rp: string, possible: string[] }>();
+    let remainingPattern = pattern;
+    let tokens: string[] = [];
+    while (remainingPattern.length > 0) {
+        for (const t of towels) {
+            if (remainingPattern.startsWith(t)) {
+                const rp = remainingPattern.slice(t.length);
+                const possible = [...tokens];
+                possible.push(t);
+                possibilities.push({rp, possible});
+            }
+        }
+
+        let foundWayForward = false;
+        while (!foundWayForward) {
+            if (possibilities.isEmpty()) {
+                return {success: false, tokens: []};
+            }
+            const candidate = possibilities.pull()!;
+            remainingPattern = candidate.rp;
+            tokens = candidate.possible;
+            foundWayForward = true;
+        }
+    }
+    return {success: true, tokens};
 }
 
 export function letMeCountTheWays(pattern: string, towels: string[]) {
