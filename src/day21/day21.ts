@@ -36,29 +36,35 @@ export function enterCode(code: string, chain: Keypad[]) {
     // We can optimise one char of the code at a time, since after each of those we know where we end up.
     // All d-pads on "A" and the numpad on the code's char.
     let totalPresses = 0;
-    let requiredSequence = code;
-    for (let i = 0; i < chain.length; i++) {
-        let nextSequence = "";
-        for (const key of requiredSequence) {
-            const options = chain[i].shortestPathsTo(key);
-            if (i === chain.length-1) {
-                totalPresses += Math.min(...options.map(op => op.length));
-            } else {
+    for (const codeKey of code) {
+        const moves = chain[0].shortestPathsTo(codeKey);
+        let requiredSequence = moves[0] // change this to lowest-cost option
+        for (let i=1; i<chain.length; i++) {
+            let nextSequence = "";
+            for (const k of requiredSequence) {
+                const options = chain[i].shortestPathsTo(k);
                 let lowestCost = Infinity;
                 let lowestSequence = "";
                 for (const op of options) {
-                    const cost = chain[i].costToSend(op, chain[i+1]);
-                    if (cost < lowestCost) {
-                        lowestCost = cost;
-                        lowestSequence = op;
+                    if (i === chain.length-1) {
+                        if (op.length < lowestCost) {
+                            lowestCost = op.length;
+                            lowestSequence = op;
+                        }
+                    } else {
+                        const thisCost = chain[i].costToSend(op, chain[i+1]);
+                        if(thisCost < lowestCost) {
+                            lowestCost = thisCost;
+                            lowestSequence = op;
+                        }
                     }
                 }
                 nextSequence += lowestSequence + "A";
             }
-            if (i === 0) chain[i].currentKey = key;
+            requiredSequence = nextSequence;
         }
-        console.log(nextSequence)
-        requiredSequence = nextSequence;
+        totalPresses += requiredSequence.length;
+        console.log(requiredSequence)
     }
 
     return totalPresses;
@@ -177,7 +183,5 @@ export const directionKeymap: Keymap = {
     },
     ">": {}
 };
-
-
 
 
