@@ -21,54 +21,56 @@ export class Keypad {
         return fromThere.map(reversePath);
     }
 
-    costToSend(sequence: string, sender: Keypad) {
-        // How many keys would the sender need to press to send me
-        // over to each dir key, press it, back to A and press that?
+    costToSendPath(pathSequence: string) {
+        // For a dirpad sending this sequence: Starting over A, sending all
+        // the directions with an A after each one, how many presses are needed?
+        this.currentKey = "A";
         let cost = 0;
-        for (const key of sequence + "A") {
-            cost += (sender.shortestPathsTo(key)[0].length + 1) * 2;
+        for (const key of pathSequence) {
+            cost += this.shortestPathsTo(key)[0].length + 1; // +1 for the A
+            this.currentKey = key;
         }
         return cost;
     }
 }
 
-export function enterCode(code: string, chain: Keypad[]) {
+// <vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A
+// v<<A>>^A<A>AvA<^AA>A<vAAA>^A
+// <A^A>^^AvvvA
+// 029A
+
+export function sequenceNeededToEnterCode(code: string, chain: Keypad[]) {
     // We can optimise one char of the code at a time, since after each of those we know where we end up.
     // All d-pads on "A" and the numpad on the code's char.
-    let totalPresses = 0;
-    for (const codeKey of code) {
-        const moves = chain[0].shortestPathsTo(codeKey);
-        let requiredSequence = moves[0] // change this to lowest-cost option
-        for (let i=1; i<chain.length; i++) {
-            let nextSequence = "";
-            for (const k of requiredSequence) {
-                const options = chain[i].shortestPathsTo(k);
-                let lowestCost = Infinity;
-                let lowestSequence = "";
-                for (const op of options) {
-                    if (i === chain.length-1) {
-                        if (op.length < lowestCost) {
-                            lowestCost = op.length;
-                            lowestSequence = op;
-                        }
-                    } else {
-                        const thisCost = chain[i].costToSend(op, chain[i+1]);
-                        if(thisCost < lowestCost) {
-                            lowestCost = thisCost;
-                            lowestSequence = op;
-                        }
-                    }
+
+    let sequence = code;
+    for (let i=0; i < chain.length; i++) {
+        let sendToThisPad = "";
+        let cost = 0;
+        for (const key of sequence) {
+            let bestCmd = "";
+            let lowestCostSoFar = Infinity;
+            for (const option of chain[i].shortestPathsTo(key)) {
+                const cmdForThisOption = option + "A";
+                const costForThisOption = (i+1 < chain.length) ? chain[i+1].costToSendPath(cmdForThisOption) : cmdForThisOption.length;
+                if (costForThisOption < lowestCostSoFar) {
+                    bestCmd = cmdForThisOption;
+                    lowestCostSoFar = costForThisOption;
                 }
-                nextSequence += lowestSequence + "A";
             }
-            requiredSequence = nextSequence;
+            sendToThisPad += bestCmd;
+            cost += lowestCostSoFar;
+            chain[i].currentKey = key;
         }
-        totalPresses += requiredSequence.length;
-        console.log(requiredSequence)
+        sequence = sendToThisPad;
+        console.log(sequence)
+        console.log(cost);
     }
 
-    return totalPresses;
+    return sequence;
 }
+
+
 
 export async function solvePart1(lines: Sequence<string>) {
     return "Hello, World!";
