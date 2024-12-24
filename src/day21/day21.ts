@@ -1,88 +1,5 @@
 import {linesFromFile, Sequence} from "generator-sequences";
 
-export function reversePath(p: string) {
-    return [...p].reverse().map(c => "^v<>"["v^><".indexOf(c)]).join("");
-}
-
-export class Keypad {
-    currentKey = "A"
-
-    constructor(private readonly keymap: Keymap) {}
-
-    shortestPathsTo(destination: string) {
-        if (destination === this.currentKey) return [""];
-
-        const fromHere = this.keymap[this.currentKey][destination];
-        if (fromHere !== undefined) {
-            return fromHere;
-        }
-
-        const fromThere = this.keymap[destination][this.currentKey];
-        return fromThere.map(reversePath);
-    }
-
-    costToSendPath(pathSequence: string) {
-        // For a dirpad sending this sequence: Starting over A, sending all
-        // the directions with an A after each one, how many presses are needed?
-        this.currentKey = "A";
-        let cost = 0;
-        for (const key of pathSequence) {
-            cost += this.shortestPathsTo(key)[0].length + 1; // +1 for the A
-            this.currentKey = key;
-        }
-        return cost;
-    }
-}
-
-// <vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A
-// v<<A>>^A<A>AvA<^AA>A<vAAA>^A
-// <A^A>^^AvvvA
-// 029A
-
-export function sequenceNeededToEnterCode(code: string, chain: Keypad[]) {
-    // We can optimise one char of the code at a time, since after each of those we know where we end up.
-    // All d-pads on "A" and the numpad on the code's char.
-
-    let sequence = code;
-    for (let i=0; i < chain.length; i++) {
-        let sendToThisPad = "";
-        let cost = 0;
-        for (const key of sequence) {
-            let bestCmd = "";
-            let lowestCostSoFar = Infinity;
-            for (const option of chain[i].shortestPathsTo(key)) {
-                const cmdForThisOption = option + "A";
-                const costForThisOption = (i+1 < chain.length) ? chain[i+1].costToSendPath(cmdForThisOption) : cmdForThisOption.length;
-                if (costForThisOption < lowestCostSoFar) {
-                    bestCmd = cmdForThisOption;
-                    lowestCostSoFar = costForThisOption;
-                }
-            }
-            sendToThisPad += bestCmd;
-            cost += lowestCostSoFar;
-            chain[i].currentKey = key;
-        }
-        sequence = sendToThisPad;
-        console.log(sequence)
-        console.log(cost);
-    }
-
-    return sequence;
-}
-
-
-
-export async function solvePart1(lines: Sequence<string>) {
-    return "Hello, World!";
-}
-
-// If this script was invoked directly on the command line:
-if (`file://${process.argv[1]}` === import.meta.url) {
-    const filepath = `${import.meta.dirname}/day21.input.txt`;
-    console.log(await solvePart1(linesFromFile(filepath)));
-}
-
-
 type Keymap = {[from: string]: {[to: string]: string[]}};
 
 export const numericKeymap: Keymap = {
@@ -181,9 +98,72 @@ export const directionKeymap: Keymap = {
         ">": [">>"],
     },
     "v": {
-        ">": [">>"],
+        ">": [">"],
     },
     ">": {}
 };
+
+export function reversePath(p: string) {
+    return [...p].reverse().map(c => "^v<>"["v^><".indexOf(c)]).join("");
+}
+
+export class Keypad {
+    currentKey = "A"
+
+    constructor(private readonly keymap: Keymap) {}
+
+    shortestPathsTo(destination: string) {
+        if (destination === this.currentKey) return [""];
+
+        const fromHere = this.keymap[this.currentKey][destination];
+        if (fromHere !== undefined) {
+            return fromHere;
+        }
+
+        const fromThere = this.keymap[destination][this.currentKey];
+        return fromThere.map(reversePath);
+    }
+}
+
+
+const cache = new Map<string, number>();
+export function costToEnterCode(code: string, chain: Keypad[]) {
+    const theseArgs = `${code} + ${chain.length}`;
+    const result = cache.get(theseArgs);
+    if (result !== undefined) return result;
+
+    const [head, ...rest] = chain;
+    let cost = 0;
+
+    for (const key of code) {
+        if (rest.length === 0) {
+            cost += head.shortestPathsTo(key)[0].length +1; // For the "A"
+        } else {
+            const optionCosts = head.shortestPathsTo(key).map(path => costToEnterCode(path+"A", rest));
+            cost += Math.min(...optionCosts);
+        }
+        head.currentKey = key;
+    }
+
+    cache.set(theseArgs, cost);
+    return cost;
+}
+
+export async function solve(lines: Sequence<string>, numRobotDirpads=2) {
+    const chain = Array.from({length: numRobotDirpads}, () => new Keypad(directionKeymap));
+    chain.unshift(new Keypad(numericKeymap));
+
+    const complexities = lines.map(code => costToEnterCode(code, chain) * parseInt(code));
+    return Sequence.sum(complexities);
+}
+
+// If this script was invoked directly on the command line:
+if (`file://${process.argv[1]}` === import.meta.url) {
+    const filepath = `${import.meta.dirname}/day21.input.txt`;
+    const numRobotDirpads = 25;
+    console.log(await solve(linesFromFile(filepath), numRobotDirpads));
+}
+
+
 
 
