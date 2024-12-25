@@ -22,7 +22,24 @@ export function secret(n: number, repeat=1) {
     return updatedSecret;
 }
 
+export function pricesAndChanges(n: number, repeat=1) {
+    let result: [number, number|null][] = [];
+    let val = n;
+    for (let i=0; i < repeat; i++) {
+        const price = val % 10;
+        const diff = result.length > 0 ? price - result[result.length-1][0] : null;
+        result.push([price, diff]);
+        val = secret(val);
+    }
+    return result;
+}
+
 export async function solvePart1(lines: Sequence<string>) {
+    const secrets = lines.map(Number).map(n => secret(n, 2000));
+    return Sequence.sum(secrets);
+}
+
+export async function solvePart2(lines: Sequence<string>) {
     const secrets = lines.map(Number).map(n => secret(n, 2000));
     return Sequence.sum(secrets);
 }
