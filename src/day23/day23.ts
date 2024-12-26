@@ -34,46 +34,53 @@ export async function solvePart1(lines: Sequence<string>) {
     return triples.size;
 }
 
+// This could do with rearranging into easy to read separate functions...
+// But it works!
 export async function solvePart2(lines: Sequence<string>) {
-    const separateClusters = new Set<Set<string>>();
+    const directConnections = new Map<string, Set<string>>();
+
     for await (const line of lines) {
-        const [a, b] = line.split("-");
-
-        let clusterWithA = null;
-        let clusterWithB = null;
-        for (const cluster of separateClusters) {
-            if (cluster.has(a)) {
-                clusterWithA = cluster;
-            } else if (cluster.has(b)) {
-                clusterWithB = cluster;
+        const [left, right] = line.split("-");
+        for (const [a, b] of [[left, right], [right, left]]) {
+            if (!directConnections.has(a)) {
+                directConnections.set(a, new Set<string>());
             }
-            if (clusterWithA !== null && clusterWithB !== null) break;
-        }
-
-        if (clusterWithA === null && clusterWithB === null) {
-            separateClusters.add(new Set([a, b]));
-        } else if (clusterWithA !== null && clusterWithB === null) {
-            clusterWithA.add(b);
-        } else if (clusterWithA === null && clusterWithB !== null) {
-            clusterWithB.add(a);
-        } else if (clusterWithA !== null && clusterWithB !== null) {
-            const superCluster = clusterWithA.union(clusterWithB);
-            separateClusters.delete(clusterWithA);
-            separateClusters.delete(clusterWithB);
-            separateClusters.add(superCluster);
+            directConnections.get(a)!.add(b);
         }
     }
 
-    let maxCluster = new Set<string>();
-    for (const cluster of separateClusters) {
-        if (cluster.size > maxCluster.size) maxCluster = cluster;
+    let bestSoFar = new Set<string>();
+
+    for (const [anchor, connections] of directConnections) {
+        const toCheck = new Set(connections);
+        while(toCheck.size >= bestSoFar.size) {
+            const cluster = new Set<string>();
+            for (const a of toCheck) {
+                const aConn = directConnections.get(a)!;
+                let connectedToAll = true;
+                for (const b of cluster) {
+                    if (!aConn.has(b)) {
+                        connectedToAll = false;
+                        break;
+                    }
+                }
+                if (connectedToAll) {
+                    cluster.add(a);
+                    toCheck.delete(a);
+                }
+            }
+            cluster.add(anchor);
+            if (cluster.size > bestSoFar.size) {
+                bestSoFar = cluster;
+            }
+        }
     }
 
-    return [...maxCluster].sort().join(",");
+    return [...bestSoFar].sort().join(",");
 }
 
 // If this script was invoked directly on the command line:
 if (`file://${process.argv[1]}` === import.meta.url) {
     const filepath = `${import.meta.dirname}/day23.input.txt`;
-    console.log(await solvePart1(linesFromFile(filepath)));
+    console.log(await solvePart2(linesFromFile(filepath)));
 }
