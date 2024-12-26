@@ -69,12 +69,34 @@ export class Device {
         }
         return result;
     }
+
+    *describeForGraphviz() {
+        yield "digraph G {";
+        const counts: {[k: string]: number} = { "AND": 0,  "OR": 0, "XOR": 0 };
+        for (const gate of this.gates) {
+            const gateId = gate.operation + counts[gate.operation]++;
+            yield gate.input1 + " -> " + gateId;
+            yield gate.input2 + " -> " + gateId;
+            yield gateId + " -> " + gate.output;
+        }
+        yield "}";
+    }
 }
 
 export async function solvePart1(lines: Sequence<string>) {
     const device = await Device.buildFromDescription(lines);
     return device.getOverallOutput();
 }
+
+// Run once, pipe output to file and paste into https://dreampuf.github.io/GraphvizOnline
+// Work out what needs swapping and paste those wires into the array here then run again.
+export async function solvePart2(lines: Sequence<string>) {
+    const device = await Device.buildFromDescription(lines);
+    for (const line of device.describeForGraphviz()) console.log(line);
+    const wiresToSwap: string[] = [];
+    return(wiresToSwap.sort().join(","));
+}
+
 
 // If this script was invoked directly on the command line:
 if (`file://${process.argv[1]}` === import.meta.url) {
