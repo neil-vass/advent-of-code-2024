@@ -1,10 +1,8 @@
 import {expect, describe, it} from "vitest";
 import {
     availableTowels,
-    availableTowelsV2,
     isPossible,
     letMeCountTheWays,
-    madeFrom,
     solvePart1,
     solvePart2
 } from "./day19.js";
@@ -40,16 +38,18 @@ describe("Part 1", () => {
 });
 
 describe("Part 2", () => {
-    it("Tells you how to make a pattern", () => {
-        const towels = "r, wr, b, g, bwu";
-        expect(madeFrom("br", towels)).toStrictEqual(
-            { success: true, tokens: ["b", "r"] });
+    it("Counts simple ways to make a pattern", () => {
+        const towels = "r, b, rb".split(", ");
+        expect(letMeCountTheWays("r", towels)).toBe(1);
+        expect(letMeCountTheWays("rb", towels)).toBe(2);
     });
 
-    it("Counts ways to make a pattern", () => {
-        const towels = availableTowelsV2("r, wr, b, g, bwu, rb, gb, br");
-        expect(madeFrom("br", towels)).toStrictEqual(
-            { success: true, tokens: ["b", "r"] });
+    it("Counts example's ways to make a pattern", () => {
+        const towels = "r, wr, b, g, bwu, rb, gb, br".split(", ");
+        expect(letMeCountTheWays("brwrr", towels)).toBe(2);
+        expect(letMeCountTheWays("bggr", towels)).toBe(1);
+        expect(letMeCountTheWays("gbbr", towels)).toBe(4);
+        expect(letMeCountTheWays("rrbgbr", towels)).toBe(6);
     });
 
     it("Solves example", async () => {
