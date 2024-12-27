@@ -22,16 +22,30 @@ export function secret(n: number, repeat=1) {
     return updatedSecret;
 }
 
-export function pricesAndChanges(n: number, repeat=1) {
-    let result: [number, number|null][] = [];
-    let val = n;
-    for (let i=0; i < repeat; i++) {
-        const price = val % 10;
-        const diff = result.length > 0 ? price - result[result.length-1][0] : null;
-        result.push([price, diff]);
-        val = secret(val);
+export function populateDiffMap(initial: number, numSecrets: number, diffMap: Map<string, number>) {
+    let [prevNum, prevPrice] = [initial, initial % 10];
+    let diffs: number[] = [];
+    const seen = new Set<string>();
+
+    for (let i=0; i < numSecrets; i++) {
+        const currNum = secret(prevNum);
+        const currPrice = currNum % 10;
+        const currDiff = currPrice - prevPrice;
+
+        if (diffs.length === 4) diffs = diffs.slice(1);
+        diffs.push(currDiff);
+
+        if (diffs.length === 4) {
+            const key = JSON.stringify(diffs);
+            if (!seen.has(key)) {
+                const total = (diffMap.get(key) || 0) + currPrice;
+                diffMap.set(key, total);
+                seen.add(key);
+            }
+        }
+
+        [prevNum, prevPrice] = [currNum, currPrice];
     }
-    return result;
 }
 
 export async function solvePart1(lines: Sequence<string>) {
@@ -40,13 +54,16 @@ export async function solvePart1(lines: Sequence<string>) {
 }
 
 export async function solvePart2(lines: Sequence<string>) {
-    const secrets = lines.map(Number).map(n => secret(n, 2000));
-    return Sequence.sum(secrets);
+    const diffMap = new Map<string, number>();
+    for await (const n of lines.map(Number)) {
+        populateDiffMap(n, 2000, diffMap);
+    }
+    return Math.max(...diffMap.values());
 }
 
 // If this script was invoked directly on the command line:
 if (`file://${process.argv[1]}` === import.meta.url) {
     const filepath = `${import.meta.dirname}/day22.input.txt`;
-    console.log(await solvePart1(linesFromFile(filepath)));
+    console.log(await solvePart2(linesFromFile(filepath)));
 }
 
